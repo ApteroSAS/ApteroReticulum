@@ -42,3 +42,5 @@ log
 
 #VS Code
 .vscode
+/.idea/libraries
+/.idea

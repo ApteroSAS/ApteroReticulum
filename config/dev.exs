@@ -1,14 +1,12 @@
 use Mix.Config
 
-# NOTE: this file contains some security keys/certs that are *not* secrets, and are only used for local development purposes.
-
-host = "hubs.local"
+host = "reticulum.aptero.co"
 cors_proxy_host = "hubs-proxy.local"
 
 # To run reticulum across a LAN for local testing, uncomment and change the line below to the LAN IP
 # host = "192.168.1.27"
 
-dev_janus_host = "dev-janus.reticulum.io"
+janus_host = "janus.aptero.co"
 
 # For development, we disable any cache and enable
 # debugging and code reloading.
@@ -17,16 +15,13 @@ dev_janus_host = "dev-janus.reticulum.io"
 # watchers to your application. For example, we use it
 # with brunch.io to recompile .js and .css sources.
 config :ret, RetWeb.Endpoint,
-  url: [scheme: "https", host: host, port: 4000],
-  static_url: [scheme: "https", host: host, port: 4000],
-  https: [
-    port: 4000,
-    otp_app: :ret,
-    cipher_suite: :strong,
-    keyfile: "#{System.get_env("PWD")}/priv/dev-ssl.key",
-    certfile: "#{System.get_env("PWD")}/priv/dev-ssl.cert"
+  url: [scheme: "http", host: host, port: 80],
+  static_url: [scheme: "http", host: host, port: 80],
+  http: [
+    port: 80,
+    otp_app: :ret
   ],
-  cors_proxy_url: [scheme: "https", host: cors_proxy_host, port: 4000],
+  cors_proxy_url: [scheme: "http", host: cors_proxy_host, port: 80],
   debug_errors: true,
   code_reloader: true,
   check_origin: false,
@@ -51,7 +46,7 @@ config :ret, RetWeb.Endpoint,
 #
 # The `http:` config above can be replaced with:
 #
-#     https: [port: 4000, keyfile: "priv/server.key", certfile: "priv/server.pem"],
+#     https: [port: 80, keyfile: "priv/server.key", certfile: "priv/server.pem"],
 #
 # If desired, both `http:` and `https:` keys can be
 # configured to run both http and https servers on
@@ -82,8 +77,8 @@ env_db_host = "#{System.get_env("DB_HOST")}"
 config :ret, Ret.Repo,
   username: "postgres",
   password: "postgres",
-  database: "ret_dev",
-  hostname: if(env_db_host == "", do: "localhost", else: env_db_host),
+  database: "ret_prod",
+  hostname: "10.10.0.7",
   template: "template0",
   pool_size: 10
 
@@ -130,16 +125,22 @@ config :ret, Ret.Storage,
   ttl: 60 * 60 * 24
 
 asset_hosts =
-  "https://localhost:4000 https://localhost:8080 " <>
-    "https://#{host}:4000 https://#{host}:8080 https://#{host}:3000 https://#{host}:8989 https://#{host}:9090 https://#{
+  "https://localhost:80 https://localhost:8080 " <>
+  "http://localhost:80 http://localhost:8080 " <>
+    "https://#{host}:80 https://#{host}:8080 https://#{host}:3000 https://#{host}:8989 https://#{host}:9090 https://#{
       cors_proxy_host
-    }:4000 " <>
+    }:80 " <>
+    "http://#{host}:80 http://#{host}:8080 http://#{host}:3000 http://#{host}:8989 http://#{host}:9090 http://#{
+      cors_proxy_host
+    }:80 " <>
     "https://assets-prod.reticulum.io https://asset-bundles-dev.reticulum.io https://asset-bundles-prod.reticulum.io"
 
 websocket_hosts =
-  "https://localhost:4000 https://localhost:8080 wss://localhost:4000 " <>
-    "https://#{host}:4000 https://#{host}:8080 wss://#{host}:4000 wss://#{host}:8080 wss://#{host}:8989 wss://#{host}:9090 " <>
-    "wss://#{dev_janus_host} wss://prod-janus.reticulum.io wss://#{host}:4000 wss://#{host}:8080 https://#{host}:8080 https://hubs.local:8080 wss://hubs.local:8080"
+  "https://localhost:80 https://localhost:8080 wss://localhost:80 " <>
+  "http://localhost:80 http://localhost:8080 ws://localhost:80 " <>
+    "https://#{host}:80 https://#{host}:8080 wss://#{host}:80 wss://#{host}:8080 wss://#{host}:8989 wss://#{host}:9090 " <>
+    "http://#{host}:80 http://#{host}:8080 ws://#{host}:80 ws://#{host}:8080 ws://#{host}:8989 ws://#{host}:9090 " <>
+    "wss://#{janus_host} wss://prod-janus.reticulum.io wss://#{host}:80 wss://#{host}:8080 https://#{host}:8080 https://hubs.local:8080 wss://hubs.local:8080"
 
 script_shas =
   "'sha256-hsbRcgUBASABDq7qVGVTpbnWq/ns7B+ToTctZFJXYi8=' 'sha256-MIpWPgYj31kCgSUFc0UwHGQrV87W6N5ozotqfxxQG0w=' 'sha256-/S6PM16MxkmUT7zJN2lkEKFgvXR7yL4Z8PCrRrFu4Q8='"
@@ -158,7 +159,7 @@ config :ret, RetWeb.Plugs.AddCSP,
 
 config :ret, Ret.Mailer, adapter: Bamboo.LocalAdapter
 
-config :ret, RetWeb.Email, from: "info@hubs-mail.com"
+config :ret, RetWeb.Email, from: "admin@aptero.co"
 
 config :ret, Ret.PermsToken, perms_key: (System.get_env("PERMS_KEY") || "") |> String.replace("\\n", "\n")
 
@@ -170,7 +171,7 @@ config :ret, Ret.Guardian,
   ttl: {12, :weeks}
 
 config :web_push_encryption, :vapid_details,
-  subject: "mailto:admin@mozilla.com",
+  subject: "mailto:admin@aptero.co",
   public_key: "BAb03820kHYuqIvtP6QuCKZRshvv_zp5eDtqkuwCUAxASBZMQbFZXzv8kjYOuLGF16A3k8qYnIN10_4asB-Aw7w",
   private_key: "w76tXh1d3RBdVQ5eINevXRwW6Ow6uRcBa8tBDOXfmxM"
 
@@ -184,7 +185,7 @@ config :sentry,
 
 config :ret, Ret.Habitat, ip: "127.0.0.1", http_port: 9631
 
-config :ret, Ret.JanusLoadStatus, default_janus_host: dev_janus_host, janus_port: 443
+config :ret, Ret.JanusLoadStatus, default_janus_host: janus_host, janus_port: 443
 
 config :ret, Ret.RoomAssigner, balancer_weights: [{600, 1}, {300, 50}, {0, 500}]
 
