@@ -61,6 +61,12 @@ pool_size = {{ cfg.db.pool_size }}
 {{#if cfg.db.idle_interval }}
 idle_interval = {{ cfg.db.idle_interval }}
 {{/if}}
+{{#if cfg.db.queue_interval }}
+queue_interval = {{ cfg.db.queue_interval }}
+{{/if}}
+{{#if cfg.db.timeout }}
+timeout = {{ cfg.db.timeout }}
+{{/if}}
 
 [ret."Elixir.Ret.Locking".session_lock_db]
 username = "{{ cfg.session_lock_db.username }}"
@@ -120,6 +126,7 @@ insecure_ssl = {{ cfg.pages.insecure_ssl }}
 storage_path = "{{ cfg.uploads.storage_path }}"
 ttl = {{ cfg.uploads.ttl }}
 host = "{{ cfg.uploads.host }}"
+quota_gb = {{ cfg.uploads.quota_gb }}
 
 [ret."Elixir.RetWeb.Email"]
 from = "{{ cfg.email.from }}"
@@ -150,6 +157,11 @@ node_gauges_enabled = {{ cfg.stats.node_gauges_enabled }}
 [ret."Elixir.RetWeb.HealthController"]
 {{#if cfg.health.check_repo }}
 check_repo = {{ cfg.health.check_repo }}
+{{/if}}
+
+[ret."Elixir.Ret.Account"]
+{{#if cfg.accounts.admin_email }}
+admin_email = "{{ cfg.accounts.admin_email }}"
 {{/if}}
 
 [web_push_encryption.vapid_details]

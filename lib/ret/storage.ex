@@ -21,13 +21,17 @@ defmodule Ret.Storage do
   # Given a path to a file, a content-type, and an optional encryption key, returns an id
   # that can be used to fetch a stream to the uploaded file after this call.
   def store(path, content_type, key, promotion_token) do
-    case File.stat(path) do
-      {:ok, %{size: source_size}} ->
-        source_stream = path |> File.stream!([], @chunk_size)
-        store_stream(source_stream, source_size, content_type, key, promotion_token, @expiring_file_path)
+    if in_quota?() do
+      case File.stat(path) do
+        {:ok, %{size: source_size}} ->
+          source_stream = path |> File.stream!([], @chunk_size)
+          store_stream(source_stream, source_size, content_type, key, promotion_token, @expiring_file_path)
 
-      {:error, _reason} = err ->
-        err
+        {:error, _reason} = err ->
+          err
+      end
+    else
+      {:error, :quota}
     end
   end
 
@@ -193,30 +197,34 @@ defmodule Ret.Storage do
         # TODO figure out what to do about owned files -- that structure increase over time
         for type <- [@expiring_file_path] do
           root_path = "#{storage_path}/#{type}"
-          {:ok, dirs} = :file.list_dir(root_path)
 
-          # Walk sub directories and remove them if they are empty.
-          for d <- dirs do
-            sub_path = Path.join(root_path, d)
-            {:ok, subdirs} = :file.list_dir(sub_path)
+          with {:ok, dirs} <- :file.list_dir(root_path) do
+            # Walk sub directories and remove them if they are empty.
+            for d <- dirs do
+              sub_path = Path.join(root_path, d)
 
-            for sd <- subdirs do
-              path = Path.join(sub_path, sd)
-              {:ok, files} = :file.list_dir(path)
+              with {:ok, subdirs} <- :file.list_dir(sub_path) do
+                for sd <- subdirs do
+                  path = Path.join(sub_path, sd)
 
-              if files |> length === 0 do
-                File.rmdir(path)
+                  with {:ok, files} <- :file.list_dir(path) do
+                    if files |> length === 0 do
+                      File.rmdir(path)
+                    end
+                  end
+                end
               end
             end
-          end
 
-          # Check if we've removed all the sub directories.
-          for d <- dirs do
-            sub_path = Path.join(root_path, d)
-            {:ok, subdirs} = :file.list_dir(sub_path)
+            # Check if we've removed all the sub directories.
+            for d <- dirs do
+              sub_path = Path.join(root_path, d)
 
-            if subdirs |> length === 0 do
-              File.rmdir(sub_path)
+              with {:ok, subdirs} <- :file.list_dir(sub_path) do
+                if subdirs |> length === 0 do
+                  File.rmdir(sub_path)
+                end
+              end
             end
           end
         end
@@ -279,10 +287,6 @@ defmodule Ret.Storage do
 
   defp encrypt_stream_to_file(source_stream, source_size, destination_path, key) do
     Ret.Crypto.encrypt_stream_to_file(source_stream, source_size, destination_path, key |> Ret.Crypto.hash())
-  end
-
-  defp module_config(key) do
-    Application.get_env(:ret, __MODULE__)[key]
   end
 
   defp paths_for_uuid(uuid, subpath) do
@@ -350,4 +354,19 @@ defmodule Ret.Storage do
       owned_file
     end)
   end
+
+  def in_quota?() do
+    with storage_path when is_binary(storage_path) <- module_config(:storage_path),
+         quota_gb when is_integer(quota_gb) and quota_gb > 0 <- module_config(:quota_gb) do
+      case Cachex.get(:storage_used, :storage_used) do
+        {:ok, 0} -> true
+        {:ok, kbytes} -> kbytes < quota_gb * 1024 * 1024
+        _ -> false
+      end
+    else
+      _ -> true
+    end
+  end
+
+  defp module_config(key), do: Application.get_env(:ret, __MODULE__)[key]
 end
