@@ -7,6 +7,7 @@ cors_proxy_host = "hubs-proxy.local"
 # host = "192.168.1.27"
 
 janus_host = "janus.aptero.co"
+#janus_host = "dev-janus.reticulum.io"
 
 # For development, we disable any cache and enable
 # debugging and code reloading.
