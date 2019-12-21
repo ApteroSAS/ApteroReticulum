@@ -1,12 +1,12 @@
 use Mix.Config
 
-host = "reticulum.aptero.co"
+host = System.get_env("MAIN_HOST")
 cors_proxy_host = "hubs-proxy.local"
 
 # To run reticulum across a LAN for local testing, uncomment and change the line below to the LAN IP
 # host = "192.168.1.27"
 
-janus_host = "janus.aptero.co"
+janus_host = System.get_env("JANUS_HOST")
 #janus_host = "dev-janus.reticulum.io"
 
 # For development, we disable any cache and enable
@@ -76,10 +76,10 @@ env_db_host = "#{System.get_env("DB_HOST")}"
 
 # Configure your database
 config :ret, Ret.Repo,
-  username: "postgres",
-  password: "postgres",
-  database: "ret_prod",
-  hostname: "10.10.0.7",
+  username: System.get_env("DB_USER"),
+  password: System.get_env("DB_PWD"),
+  database: System.get_env("DB_NAME"),
+  hostname: System.get_env("DB_HOST"),
   template: "template0",
   pool_size: 10
 
@@ -158,7 +158,19 @@ config :ret, RetWeb.Plugs.AddCSP,
       asset_hosts
     };"
 
-config :ret, Ret.Mailer, adapter: Bamboo.LocalAdapter
+#config :ret, Ret.Mailer, adapter: Bamboo.LocalAdapter
+config :ret, Ret.Mailer,
+  adapter: Bamboo.SMTPAdapter,
+  server: "mail.privateemail.com",
+  port: 465,
+  username: "admin@aptero.co", # or {:system, "SMTP_USERNAME"}
+  password: "%uPzEMs!)0T7U", # or {:system, "SMTP_PASSWORD"}
+  tls: :if_available, # can be `:always` or `:never`
+  allowed_tls_versions: [:"tlsv1", :"tlsv1.1", :"tlsv1.2"], # or {:system, "ALLOWED_TLS_VERSIONS"} w/ comma seprated values (e.g. "tlsv1.1,tlsv1.2")
+  ssl: true, # can be `true`
+  retries: 3,
+  no_mx_lookups: false, # can be `true`
+  auth: :always # can be `:always`. If your smtp relay requires authentication set it to `:always`.
 
 config :ret, RetWeb.Email, from: "admin@aptero.co"
 
