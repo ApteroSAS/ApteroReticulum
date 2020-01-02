@@ -7,6 +7,7 @@ cors_proxy_host = "hubs-proxy.local"
 # host = "192.168.1.27"
 
 janus_host = System.get_env("JANUS_HOST")
+janus_port = System.get_env("JANUS_PORT")
 #janus_host = "dev-janus.reticulum.io"
 
 # For development, we disable any cache and enable
@@ -141,7 +142,7 @@ websocket_hosts =
   "http://localhost:80 http://localhost:8080 ws://localhost:80 " <>
     "https://#{host}:80 https://#{host}:8080 wss://#{host}:80 wss://#{host}:8080 wss://#{host}:8989 wss://#{host}:9090 " <>
     "http://#{host}:80 http://#{host}:8080 ws://#{host}:80 ws://#{host}:8080 ws://#{host}:8989 ws://#{host}:9090 " <>
-    "wss://#{janus_host} wss://prod-janus.reticulum.io wss://#{host}:80 wss://#{host}:8080 https://#{host}:8080 https://hubs.local:8080 wss://hubs.local:8080"
+    "wss://#{janus_host}:#{janus_port} wss://prod-janus.reticulum.io wss://#{host}:80 wss://#{host}:8080 https://#{host}:8080 https://hubs.local:8080 wss://hubs.local:8080"
 
 script_shas =
   "'sha256-hsbRcgUBASABDq7qVGVTpbnWq/ns7B+ToTctZFJXYi8=' 'sha256-MIpWPgYj31kCgSUFc0UwHGQrV87W6N5ozotqfxxQG0w=' 'sha256-/S6PM16MxkmUT7zJN2lkEKFgvXR7yL4Z8PCrRrFu4Q8='"
@@ -198,7 +199,7 @@ config :sentry,
 
 config :ret, Ret.Habitat, ip: "127.0.0.1", http_port: 9631
 
-config :ret, Ret.JanusLoadStatus, default_janus_host: janus_host, janus_port: 443
+config :ret, Ret.JanusLoadStatus, default_janus_host: janus_host, janus_port: janus_port
 
 config :ret, Ret.RoomAssigner, balancer_weights: [{600, 1}, {300, 50}, {0, 500}]
 
