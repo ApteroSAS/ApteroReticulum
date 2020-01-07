@@ -15,6 +15,14 @@ defmodule RetWeb.Api.V1.MediaSearchController do
     conn |> render("index.json", results: results)
   end
 
+  def index(conn, %{"source" => "scene_listings", "filter" => "featured"} = params) do
+    {:commit, results} =
+      %Ret.MediaSearchQuery{source: "scene_listings", cursor: params["cursor"] || "1", filter: "featured"}
+      |> Ret.MediaSearch.search()
+
+    conn |> render("index.json", results: results)
+  end
+
   def index(conn, %{"source" => "scene_listings", "q" => q} = params) do
     {:commit, results} =
       %Ret.MediaSearchQuery{source: "scene_listings", cursor: params["cursor"] || "1", q: q} |> Ret.MediaSearch.search()
@@ -44,7 +52,7 @@ defmodule RetWeb.Api.V1.MediaSearchController do
   end
 
   def index(conn, %{"source" => source, "user" => user} = params)
-      when source in ["scenes", "avatars", "favorites", "assets"] do
+      when source in ["scenes", "avatars", "favorites", "assets", "objects"] do
     account = conn |> Guardian.Plug.current_resource()
 
     if account && account.account_id == String.to_integer(user) do
@@ -53,6 +61,7 @@ defmodule RetWeb.Api.V1.MediaSearchController do
           source: source,
           cursor: params["cursor"] || "1",
           user: account.account_id,
+          filter: params["filter"],
           type: params["type"],
           q: params["q"]
         }

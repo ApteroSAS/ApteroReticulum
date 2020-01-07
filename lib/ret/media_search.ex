@@ -44,17 +44,21 @@ defmodule Ret.MediaSearch do
   end
 
   def search(%Ret.MediaSearchQuery{
-        source: "avatar_listings",
-        cursor: cursor,
-        filter: filter,
-        q: query,
-        similar_to: similar_to
-      }) do
+    source: "avatar_listings",
+    cursor: cursor,
+    filter: filter,
+    q: query,
+    similar_to: similar_to
+  }) do
     avatar_listing_search(cursor, query, filter, similar_to)
   end
 
   def search(%Ret.MediaSearchQuery{source: "avatars", cursor: cursor, filter: filter, user: account_id, q: query}) do
     avatar_search(cursor, query, filter, account_id)
+  end
+
+  def search(%Ret.MediaSearchQuery{source: "objects", cursor: cursor, filter: filter, user: account_id, q: query}) do
+    objects_search(cursor, query, filter, account_id)
   end
 
   def search(%Ret.MediaSearchQuery{source: "assets", type: type, cursor: cursor, user: account_id, q: query}) do
@@ -188,13 +192,13 @@ defmodule Ret.MediaSearch do
           next_cursor = decoded_res |> Map.get("nextPageToken")
 
           {:commit,
-           %Ret.MediaSearchResult{
-             meta: %Ret.MediaSearchResultMeta{
-               next_cursor: next_cursor,
-               source: :poly
-             },
-             entries: entries
-           }}
+            %Ret.MediaSearchResult{
+              meta: %Ret.MediaSearchResultMeta{
+                next_cursor: next_cursor,
+                source: :poly
+              },
+              entries: entries
+            }}
       end
     else
       _ -> nil
@@ -233,13 +237,13 @@ defmodule Ret.MediaSearch do
           next_cursor = decoded_res |> Map.get("nextPageToken")
 
           {:commit,
-           %Ret.MediaSearchResult{
-             meta: %Ret.MediaSearchResultMeta{
-               next_cursor: next_cursor,
-               source: :youtube
-             },
-             entries: entries
-           }}
+            %Ret.MediaSearchResult{
+              meta: %Ret.MediaSearchResultMeta{
+                next_cursor: next_cursor,
+                source: :youtube
+              },
+              entries: entries
+            }}
       end
     else
       _ -> nil
@@ -276,10 +280,10 @@ defmodule Ret.MediaSearch do
           entries = decoded_res |> Map.get("results") |> Enum.map(&tenor_api_result_to_entry/1)
 
           {:commit,
-           %Ret.MediaSearchResult{
-             meta: %Ret.MediaSearchResultMeta{source: :tenor, next_cursor: next_cursor},
-             entries: entries
-           }}
+            %Ret.MediaSearchResult{
+              meta: %Ret.MediaSearchResultMeta{source: :tenor, next_cursor: next_cursor},
+              entries: entries
+            }}
       end
     else
       _ -> nil
@@ -318,10 +322,10 @@ defmodule Ret.MediaSearch do
           entries = decoded_res |> Map.get("streams") |> Enum.map(&twitch_api_result_to_entry/1)
 
           {:commit,
-           %Ret.MediaSearchResult{
-             meta: %Ret.MediaSearchResultMeta{source: :twitch, next_cursor: next_cursor},
-             entries: entries
-           }}
+            %Ret.MediaSearchResult{
+              meta: %Ret.MediaSearchResultMeta{source: :twitch, next_cursor: next_cursor},
+              entries: entries
+            }}
       end
     else
       _ -> nil
@@ -352,10 +356,10 @@ defmodule Ret.MediaSearch do
           cursors = decoded_res |> Map.get("cursors")
 
           {:commit,
-           %Ret.MediaSearchResult{
-             meta: %Ret.MediaSearchResultMeta{next_cursor: cursors["next"], source: :sketchfab},
-             entries: entries
-           }}
+            %Ret.MediaSearchResult{
+              meta: %Ret.MediaSearchResultMeta{next_cursor: cursors["next"], source: :sketchfab},
+              entries: entries
+            }}
       end
     else
       _ -> nil
@@ -392,11 +396,11 @@ defmodule Ret.MediaSearch do
           entries = tiles |> Enum.shuffle() |> Enum.with_index() |> Enum.map(&bing_trending_api_result_to_entry/1)
 
           {:commit,
-           %Ret.MediaSearchResult{
-             meta: %Ret.MediaSearchResultMeta{source: "bing_videos", next_cursor: nil},
-             entries: entries,
-             suggestions: []
-           }}
+            %Ret.MediaSearchResult{
+              meta: %Ret.MediaSearchResultMeta{source: "bing_videos", next_cursor: nil},
+              entries: entries,
+              suggestions: []
+            }}
       end
     else
       _ -> nil
@@ -438,11 +442,11 @@ defmodule Ret.MediaSearch do
             end
 
           {:commit,
-           %Ret.MediaSearchResult{
-             meta: %Ret.MediaSearchResultMeta{source: source, next_cursor: next_cursor},
-             entries: entries,
-             suggestions: suggestions
-           }}
+            %Ret.MediaSearchResult{
+              meta: %Ret.MediaSearchResultMeta{source: source, next_cursor: next_cursor},
+              entries: entries,
+              suggestions: suggestions
+            }}
       end
     else
       _ -> nil
@@ -512,6 +516,19 @@ defmodule Ret.MediaSearch do
         preview: %{url: asset.thumbnail_owned_file |> OwnedFile.uri_for() |> URI.to_string()}
       }
     }
+  end
+
+  defp objects_search(cursor, _query, filter, account_id, order \\ [desc: :updated_at]) do
+    page_number = (cursor || "1") |> Integer.parse() |> elem(0)
+
+    results =
+      OwnedFile
+      |> where([a], a.account_id == ^account_id and a.content_type == ^filter)
+      |> order_by(^order)
+      |> Repo.paginate(%{page: page_number, page_size: @page_size})
+      |> result_for_page(page_number, :object, &object_to_entry/1)
+
+    {:commit, results}
   end
 
   defp avatar_search(cursor, _query, _filter, account_id, order \\ [desc: :updated_at]) do
@@ -593,10 +610,10 @@ defmodule Ret.MediaSearch do
       %{parent_avatar_listing_id: similar_parent_id, avatar_listing_id: similar_id} ->
         query
         |> where(
-          [l],
-          l.avatar_listing_id == ^similar_id or l.avatar_listing_id == ^similar_parent_id or
-            l.parent_avatar_listing_id == ^similar_parent_id or l.parent_avatar_listing_id == ^similar_id
-        )
+             [l],
+             l.avatar_listing_id == ^similar_id or l.avatar_listing_id == ^similar_parent_id or
+             l.parent_avatar_listing_id == ^similar_parent_id or l.parent_avatar_listing_id == ^similar_id
+           )
     end
   end
 
@@ -640,7 +657,7 @@ defmodule Ret.MediaSearch do
   defp scene_or_scene_listing_to_entry(%Scene{} = scene), do: scene_or_scene_listing_to_entry(scene, "scene")
 
   defp scene_or_scene_listing_to_entry(%SceneListing{} = scene),
-    do: scene_or_scene_listing_to_entry(scene, "scene_listing")
+       do: scene_or_scene_listing_to_entry(scene, "scene_listing")
 
   defp scene_or_scene_listing_to_entry(s, type) do
     %{
@@ -652,6 +669,29 @@ defmodule Ret.MediaSearch do
       attributions: s.attributions,
       images: %{
         preview: %{url: s.screenshot_owned_file |> OwnedFile.uri_for() |> URI.to_string()}
+      }
+    }
+  end
+
+  defp uri_to_url(uri) do
+    %{
+      url: uri.scheme <> "://" <> uri.host <> uri.path,
+    }
+  end
+
+  defp object_to_entry(object) do
+    %{
+      id: object.owned_file_id,
+      type: object.content_type,
+      name: "object_name",
+      attributions: "attributions",
+      url: (object |> OwnedFile.uri_for() |> uri_to_url()).url,
+      images: %{
+        preview: %{
+          url: "https://asset-bundles-prod.reticulum.io/bots/avatar_unavailable.png",
+          width: 720,
+          height: 1280
+        }
       }
     }
   end
