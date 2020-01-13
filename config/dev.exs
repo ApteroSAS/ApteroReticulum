@@ -17,8 +17,8 @@ janus_port = System.get_env("JANUS_PORT")
 # watchers to your application. For example, we use it
 # with brunch.io to recompile .js and .css sources.
 config :ret, RetWeb.Endpoint,
-  url: [scheme: "http", host: host, port: 80],
-  static_url: [scheme: "http", host: host, port: 80],
+  url: [scheme: "https", host: host, port: 443],
+  static_url: [scheme: "https", host: host, port: 443],
   http: [
     port: 80,
     otp_app: :ret
