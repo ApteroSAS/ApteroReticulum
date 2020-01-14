@@ -2,25 +2,53 @@ defmodule RetWeb.PageController do
   use RetWeb, :controller
   alias Ret.{Repo, Hub, Scene, SceneListing, Avatar, AppConfig, OwnedFile, AvatarListing, PageOriginWarmer, Storage}
   alias Plug.Conn
+  import Ret.ConnUtils
 
-  @default_app_name "Hubs"
-  @default_app_description "Share a virtual room with friends. Watch videos, play with 3D objects, or just hang out."
+  @configurable_assets %{
+    app_config_favicon: {"favicon.ico", "images|favicon", "image/x-icon"},
+    app_config_app_icon: {"app-icon.png", "images|app_icon", "image/png"},
+    app_config_app_thumbnail: {"app-thumbnail.png", "images|app_thumbnail", "image/png"}
+  }
+
+  @configurable_asset_files @configurable_assets |> Map.values() |> Enum.map(&elem(&1, 0))
+  @configurable_asset_paths @configurable_asset_files |> Enum.map(&"/#{&1}")
 
   def call(conn, _params) do
-    case conn.request_path do
-      "/http://" <> _ -> cors_proxy(conn)
-      "/https://" <> _ -> cors_proxy(conn)
-      _ -> render_for_path(conn.request_path, conn.query_params, conn)
+    assets_host = RetWeb.Endpoint.config(:assets_url)[:host]
+    link_host = RetWeb.Endpoint.config(:link_url)[:host]
+    is_configurable_asset = @configurable_asset_paths |> Enum.any?(&(&1 === conn.request_path))
+
+    cond do
+      matches_host(conn, assets_host) && !is_configurable_asset ->
+        render_asset(conn)
+
+      matches_host(conn, link_host) ->
+        case conn.request_path do
+          "/" -> conn |> redirect(external: "#{RetWeb.Endpoint.url()}/link")
+          _ -> conn |> redirect(external: "#{RetWeb.Endpoint.url()}/link#{conn.request_path}")
+        end
+
+      true ->
+        case conn.request_path do
+          "/docs" -> conn |> redirect(to: "/docs/welcome.html")
+          "/docs/" -> conn |> redirect(to: "/docs/welcome.html")
+          "/docs" <> _ -> render_docs(conn)
+          "/thumbnail/" <> _ -> imgproxy_proxy(conn)
+          "/http://" <> _ -> cors_proxy(conn)
+          "/https://" <> _ -> cors_proxy(conn)
+          _ -> render_for_path(conn.request_path, conn.query_params, conn)
+        end
     end
   end
 
   defp render_scene_content(%t{} = scene, conn) when t in [Scene, SceneListing] do
-    {app_config_script, app_config_csp} = generate_app_config()
+    {app_config, app_config_script, app_config_csp} = generate_app_config()
 
     scene_meta_tags =
       Phoenix.View.render_to_string(RetWeb.PageView, "scene-meta.html",
         scene: scene,
         ret_meta: Ret.Meta.get_meta(include_repo: false),
+        translations: app_config["translations"]["en"],
         app_config_script: {:safe, app_config_script}
       )
 
@@ -30,8 +58,8 @@ defmodule RetWeb.PageController do
 
     conn
     |> append_csp("script-src", app_config_csp)
-    |> put_resp_header("content-type", "text/html; charset=utf-8")
-    |> send_resp(200, chunks)
+    |> put_hub_headers("scene")
+    |> render_chunks(chunks, "text/html; charset=utf-8")
   end
 
   defp render_scene_content(nil, conn) do
@@ -39,12 +67,13 @@ defmodule RetWeb.PageController do
   end
 
   defp render_avatar_content(%t{} = avatar, conn) when t in [Avatar, AvatarListing] do
-    {app_config_script, app_config_csp} = generate_app_config()
+    {app_config, app_config_script, app_config_csp} = generate_app_config()
 
     avatar_meta_tags =
       Phoenix.View.render_to_string(RetWeb.PageView, "avatar-meta.html",
         avatar: avatar,
         ret_meta: Ret.Meta.get_meta(include_repo: false),
+        translations: app_config["translations"]["en"],
         app_config_script: {:safe, app_config_script}
       )
 
@@ -54,8 +83,8 @@ defmodule RetWeb.PageController do
 
     conn
     |> append_csp("script-src", app_config_csp)
-    |> put_resp_header("content-type", "text/html; charset=utf-8")
-    |> send_resp(200, chunks)
+    |> put_hub_headers("avatar")
+    |> render_chunks(chunks, "text/html; charset=utf-8")
   end
 
   defp render_avatar_content(nil, conn) do
@@ -88,8 +117,8 @@ defmodule RetWeb.PageController do
     |> render_avatar_content(conn)
   end
 
-  def render_for_path("/link", _params, conn), do: conn |> render_page("link.html")
-  def render_for_path("/link/", _params, conn), do: conn |> render_page("link.html")
+  def render_for_path("/link", _params, conn), do: conn |> render_page("link.html", :hubs, "link-meta.html")
+  def render_for_path("/link/", _params, conn), do: conn |> render_page("link.html", :hubs, "link-meta.html")
 
   def render_for_path("/link/" <> hub_identifier_and_slug, _params, conn) do
     hub_identifier = hub_identifier_and_slug |> String.split("/") |> List.first()
@@ -99,16 +128,21 @@ defmodule RetWeb.PageController do
   def render_for_path("/discord", _params, conn), do: conn |> render_page("discord.html")
   def render_for_path("/discord/", _params, conn), do: conn |> render_page("discord.html")
 
-  def render_for_path("/spoke", _params, conn), do: conn |> render_page("index.html", :spoke)
-  def render_for_path("/spoke/" <> _path, _params, conn), do: conn |> render_page("index.html", :spoke)
+  def render_for_path("/spoke", _params, conn), do: conn |> render_page("index.html", :spoke, "spoke-index-meta.html")
 
-  def render_for_path("/whats-new", _params, conn), do: conn |> render_page("whats-new.html")
-  def render_for_path("/whats-new/", _params, conn), do: conn |> render_page("whats-new.html")
+  def render_for_path("/spoke/" <> _path, _params, conn),
+    do: conn |> render_page("index.html", :spoke, "spoke-index-meta.html")
 
-  def render_for_path("/hub.service.js", _params, conn), do: conn |> render_asset("hub.service.js")
+  def render_for_path("/whats-new", _params, conn),
+    do: conn |> render_page("whats-new.html", :hubs, "whats-new-meta.html")
 
-  def render_for_path("/hubs/schema.toml", _params, conn),
-    do: conn |> render_asset("schema.toml", :hubs)
+  def render_for_path("/whats-new/", _params, conn),
+    do: conn |> render_page("whats-new.html", :hubs, "whats-new-meta.html")
+
+  def render_for_path("/hub.service.js", _params, conn),
+    do: conn |> render_asset("hub.service.js", :hubs, "hub.service-meta.js")
+
+  def render_for_path("/hubs/schema.toml", _params, conn), do: conn |> render_asset("schema.toml")
 
   def render_for_path("/manifest.webmanifest", _params, conn) do
     ua =
@@ -128,8 +162,9 @@ defmodule RetWeb.PageController do
             manifest =
               Phoenix.View.render_to_string(RetWeb.PageView, "manifest.webmanifest",
                 root_url: RetWeb.Endpoint.url(),
-                app_name: get_app_config_value("translations|en|app-name") || @default_app_name,
-                app_description: get_app_config_value("translations|en|app-description") || @default_app_description
+                app_name: get_app_config_value("translations|en|app-name") || "",
+                app_description:
+                  (get_app_config_value("translations|en|app-description") || "") |> String.replace("\\n", " ")
               )
 
             unless module_config(:skip_cache) do
@@ -150,31 +185,23 @@ defmodule RetWeb.PageController do
     end
   end
 
-  def render_for_path("/favicon.ico", _params, conn) do
-    favicon = get_configurable_asset(:app_config_favicon, "images|favicon", "favicon.ico")
+  def render_for_path("/" <> file, _params, conn) when file in @configurable_asset_files do
+    {asset_key, {_file, path, mime_type}} =
+      @configurable_assets
+      |> Enum.find(fn {_, {f, _, _}} -> f === file end)
 
-    conn
-    |> put_resp_header("content-type", "image/x-icon")
-    |> send_resp(200, favicon)
-  end
-
-  def render_for_path("/app-icon.png", _params, conn) do
-    icon = get_configurable_asset(:app_config_app_icon, "images|app_icon", "app-icon.png")
-
-    conn
-    |> put_resp_header("content-type", "image/png")
-    |> send_resp(200, icon)
-  end
-
-  def render_for_path("/app-thumbnail.png", _params, conn) do
-    thumbnail = get_configurable_asset(:app_config_app_thumbnail, "images|app_thumbnail", "app-thumbnail.png")
-
-    conn
-    |> put_resp_header("content-type", "image/png")
-    |> send_resp(200, thumbnail)
+    conn |> respond_with_configurable_asset(asset_key, path, mime_type)
   end
 
   def render_for_path("/admin", _params, conn), do: conn |> render_page("admin.html", :admin)
+
+  def render_for_path("/robots.txt", _params, conn) do
+    allow_crawlers = Application.get_env(:ret, RetWeb.Endpoint)[:allow_crawlers] || false
+    robots_txt = Phoenix.View.render_to_string(RetWeb.PageView, "robots.txt", allow_crawlers: allow_crawlers)
+
+    conn
+    |> send_resp(200, robots_txt)
+  end
 
   def render_for_path("/" <> path, params, conn) do
     embed_token = params["embed_token"]
@@ -198,38 +225,60 @@ defmodule RetWeb.PageController do
     end
   end
 
-  defp get_configurable_asset(cache_key, config_key, fallback_file) do
-    case Cachex.get(:assets, cache_key) do
-      {:ok, nil} ->
-        app_config = AppConfig |> Repo.get_by(key: config_key) |> Repo.preload(:owned_file)
+  defp respond_with_configurable_asset(conn, cache_key, config_key, content_type) do
+    asset =
+      case Cachex.get(:assets, cache_key) do
+        {:ok, nil} ->
+          app_config = AppConfig |> Repo.get_by(key: config_key) |> Repo.preload(:owned_file)
 
-        asset =
-          with %AppConfig{owned_file: %OwnedFile{} = owned_file} <- app_config,
-               {:ok, _meta, stream} <- Storage.fetch(owned_file) do
-            stream |> Enum.join("")
-          else
-            _ -> chunks_for_page(fallback_file, :hubs) |> List.flatten() |> Enum.join("\n")
+          asset =
+            with %AppConfig{owned_file: %OwnedFile{} = owned_file} <- app_config,
+                 {:ok, _meta, stream} <- Storage.fetch(owned_file) do
+              stream |> Enum.join("")
+            else
+              _ -> ""
+            end
+
+          unless module_config(:skip_cache) do
+            Cachex.put(:assets, cache_key, asset, ttl: :timer.seconds(15))
           end
 
-        unless module_config(:skip_cache) do
-          Cachex.put(:assets, cache_key, asset, ttl: :timer.seconds(15))
-        end
+          asset
 
-        asset
+        {:ok, asset} ->
+          asset
+      end
 
-      {:ok, asset} ->
-        asset
+    if asset === "" do
+      conn
+      |> send_resp(404, "")
+    else
+      conn
+      |> put_resp_header("content-type", content_type)
+      |> send_resp(200, asset)
     end
   end
 
-  def render_index(conn) do
-    {app_config_script, app_config_csp} = generate_app_config()
+  defp render_index(conn) do
+    method = conn |> get_req_header("x-original-method") |> Enum.at(0)
+    conn |> render_index(method)
+  end
+
+  defp render_index(conn, "HEAD") do
+    conn
+    |> put_hub_headers("hub")
+    |> send_resp(200, "")
+  end
+
+  defp render_index(conn, _method) do
+    {app_config, app_config_script, app_config_csp} = generate_app_config()
 
     index_meta_tags =
       Phoenix.View.render_to_string(
         RetWeb.PageView,
         "index-meta.html",
         root_url: RetWeb.Endpoint.url(),
+        translations: app_config["translations"]["en"],
         app_config_script: {:safe, app_config_script}
       )
 
@@ -239,8 +288,20 @@ defmodule RetWeb.PageController do
 
     conn
     |> append_csp("script-src", app_config_csp)
-    |> put_resp_header("content-type", "text/html; charset=utf-8")
-    |> send_resp(200, chunks)
+    |> put_hub_headers("hub")
+    |> render_chunks(chunks, "text/html; charset=utf-8")
+  end
+
+  defp put_hub_headers(conn, entity_type) do
+    conn
+    |> put_resp_header(
+      "hub-name",
+      get_app_config_value("translations|en|app-full-name") || get_app_config_value("translations|en|app-name") || ""
+    )
+    |> put_resp_header(
+      "hub-entity-type",
+      entity_type
+    )
   end
 
   defp get_app_config_value(key) do
@@ -287,9 +348,9 @@ defmodule RetWeb.PageController do
   def render_hub_content(conn, hub, _slug) do
     hub = hub |> Repo.preload(scene: [:screenshot_owned_file], scene_listing: [:screenshot_owned_file])
 
-    {app_config_script, app_config_csp} = generate_app_config()
+    {app_config, app_config_script, app_config_csp} = generate_app_config()
 
-    {available_integrations_script, available_integrations_csp} =
+    {_, available_integrations_script, available_integrations_csp} =
       Ret.Meta.available_integrations_meta() |> generate_config("AVAILABLE_INTEGRATIONS")
 
     hub_meta_tags =
@@ -298,6 +359,7 @@ defmodule RetWeb.PageController do
         scene: hub.scene,
         ret_meta: Ret.Meta.get_meta(include_repo: false),
         available_integrations_script: {:safe, available_integrations_script},
+        translations: app_config["translations"]["en"],
         app_config_script: {:safe, app_config_script}
       )
 
@@ -308,8 +370,8 @@ defmodule RetWeb.PageController do
     conn
     |> append_csp("script-src", app_config_csp)
     |> append_csp("script-src", available_integrations_csp)
-    |> put_resp_header("content-type", "text/html; charset=utf-8")
-    |> send_resp(200, chunks)
+    |> put_hub_headers("room")
+    |> render_chunks(chunks, "text/html; charset=utf-8")
   end
 
   def generate_app_config() do
@@ -322,7 +384,7 @@ defmodule RetWeb.PageController do
 
     config_csp = "'sha256-#{:crypto.hash(:sha256, config_script) |> :base64.encode()}'"
 
-    {"<script>#{config_script}</script>", config_csp}
+    {config, "<script>#{config_script}</script>", config_csp}
   end
 
   # Redirect to the specified hub identifier, which can be a sid or an entry code
@@ -338,30 +400,51 @@ defmodule RetWeb.PageController do
     end
   end
 
-  defp render_asset(conn, asset, source \\ :hubs)
+  defp render_asset(conn, asset, source \\ :hubs, meta_template \\ nil)
 
-  defp render_asset(conn, nil, _source) do
+  defp render_asset(conn, nil, _source, _meta_template) do
     conn |> send_resp(404, "")
   end
 
-  defp render_asset(conn, asset, source) do
-    chunks = asset |> chunks_for_page(source)
+  defp render_asset(conn, asset, source, meta_template) do
+    app_config = Ret.AppConfig.get_config(!!module_config(:skip_cache))
+
+    meta_content =
+      if meta_template do
+        Phoenix.View.render_to_string(RetWeb.PageView, meta_template, translations: app_config["translations"]["en"])
+      else
+        []
+      end
+
+    chunks =
+      asset
+      |> chunks_for_page(source)
+      |> List.insert_at(1, meta_content)
+
     conn |> render_chunks(chunks, asset |> content_type_for_page)
   end
 
-  defp render_page(conn, page, source \\ :hubs)
+  defp render_page(conn, page, source \\ :hubs, meta_template \\ nil)
 
-  defp render_page(conn, nil, _source) do
+  defp render_page(conn, nil, _source, _meta_template) do
     conn |> send_resp(404, "")
   end
 
-  defp render_page(conn, page, source) do
-    {app_config_script, app_config_csp} = generate_app_config()
+  defp render_page(conn, page, source, meta_template) do
+    {app_config, app_config_script, app_config_csp} = generate_app_config()
+
+    meta_tags =
+      if meta_template do
+        Phoenix.View.render_to_string(RetWeb.PageView, meta_template, translations: app_config["translations"]["en"])
+      else
+        []
+      end
 
     chunks =
       page
       |> chunks_for_page(source)
       |> List.insert_at(1, app_config_script)
+      |> List.insert_at(1, meta_tags)
 
     conn
     |> append_csp("script-src", app_config_csp)
@@ -391,6 +474,32 @@ defmodule RetWeb.PageController do
     conn
     |> put_resp_header("content-type", content_type)
     |> send_resp(200, chunks |> List.flatten() |> Enum.join("\n"))
+  end
+
+  defp imgproxy_proxy(%Conn{request_path: "/thumbnail/" <> encoded_url, query_string: qs} = conn) do
+    with imgproxy_url <- Application.get_env(:ret, RetWeb.Endpoint)[:imgproxy_url],
+         [scheme, port, host] = [:scheme, :port, :host] |> Enum.map(&Keyword.get(imgproxy_url, &1)),
+         %{"w" => width, "h" => height} <- qs |> URI.decode_query() do
+      thumbnail_url = "#{scheme}://#{host}:#{port}//auto/#{width}/#{height}/sm/1/#{encoded_url}"
+
+      opts =
+        ReverseProxyPlug.init(
+          upstream: thumbnail_url,
+          client_options: [ssl: [{:versions, [:"tlsv1.2"]}]]
+        )
+
+      body = ReverseProxyPlug.read_body(conn)
+
+      %Conn{}
+      |> Map.merge(conn)
+      # Need to strip path_info since proxy plug reads it
+      |> Map.put(:path_info, [])
+      |> ReverseProxyPlug.request(body, opts)
+      |> ReverseProxyPlug.response(conn, opts)
+    else
+      _ ->
+        conn |> send_resp(401, "Bad request")
+    end
   end
 
   defp cors_proxy(%Conn{request_path: "/" <> url, query_string: ""} = conn), do: cors_proxy(conn, url)
@@ -425,6 +534,16 @@ defmodule RetWeb.PageController do
     else
       conn |> send_resp(401, "Bad request.")
     end
+  end
+
+  defp render_asset(conn) do
+    static_options = Plug.Static.init(at: "/", from: module_config(:assets_path), gzip: true, brotli: true)
+    Plug.Static.call(conn, static_options)
+  end
+
+  defp render_docs(conn) do
+    static_options = Plug.Static.init(at: "/docs", from: module_config(:docs_path), gzip: true, brotli: true)
+    Plug.Static.call(conn, static_options)
   end
 
   defp module_config(key) do

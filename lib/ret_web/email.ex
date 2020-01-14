@@ -1,7 +1,11 @@
 defmodule RetWeb.Email do
   use Bamboo.Phoenix, view: RetWeb.EmailView
+  alias Ret.{AppConfig}
 
   def auth_email(to_address, signin_args) do
+    app_name = AppConfig.get_cached_config_value("translations|en|app-name")
+    app_full_name = AppConfig.get_cached_config_value("translations|en|app-full-name") || app_name
+
     new_email()
     |> to(to_address)
     |> from({"Aptero", from_address()})
