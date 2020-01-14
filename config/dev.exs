@@ -29,6 +29,7 @@ config :ret, RetWeb.Endpoint,
   check_origin: false,
   secret_key_base: "txlMOtlaY5x3crvOCko4uV5PM29ul3zGo1oBGNO3cDXx+7GHLKqt0gR9qzgThxb5",
   allowed_origins: "*",
+  allow_crawlers: true,
   watchers: [
     node: [
       "node_modules/brunch/bin/brunch",
@@ -203,7 +204,7 @@ config :ret, Ret.JanusLoadStatus, default_janus_host: janus_host, janus_port: ja
 
 config :ret, Ret.RoomAssigner, balancer_weights: [{600, 1}, {300, 50}, {0, 500}]
 
-config :ret, RetWeb.PageController, skip_cache: true
+config :ret, RetWeb.PageController, skip_cache: true, assets_path: "storage/assets", docs_path: "storage/docs"
 
 config :ret, Ret.HttpUtils, insecure_ssl: true
 
