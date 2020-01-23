@@ -340,10 +340,10 @@ defmodule Ret.Hub do
   end
 
   defp add_default_member_permissions_to_changeset(changeset) do
-    if Ret.AppConfig.get_config_value("features|permissive_rooms") do
-      changeset |> put_change(:member_permissions, @default_member_permissions |> member_permissions_to_int)
-    else
+    if Ret.AppConfig.get_config_value("features|restrictive_rooms") do
       changeset |> put_change(:member_permissions, @default_restrictive_member_permissions |> member_permissions_to_int)
+    else
+      changeset |> put_change(:member_permissions, @default_member_permissions |> member_permissions_to_int)
     end
   end
 
