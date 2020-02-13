@@ -91,6 +91,33 @@ defmodule RetWeb.PageController do
     conn |> send_resp(404, "")
   end
 
+  defp render_homepage_content(conn, nil = _public_room_id) do
+    {app_config, app_config_script, app_config_csp} = generate_app_config()
+
+    index_meta_tags =
+      Phoenix.View.render_to_string(
+        RetWeb.PageView,
+        "index-meta.html",
+        root_url: RetWeb.Endpoint.url(),
+        translations: app_config["translations"]["en"],
+        app_config_script: {:safe, app_config_script}
+      )
+
+    chunks =
+      chunks_for_page("index.html", :hubs)
+      |> List.insert_at(1, index_meta_tags)
+
+    conn
+    |> append_csp("script-src", app_config_csp)
+    |> put_hub_headers("hub")
+    |> render_chunks(chunks, "text/html; charset=utf-8")
+  end
+
+  defp render_homepage_content(conn, default_room_id) do
+    hub = Hub |> Repo.get_by(hub_sid: default_room_id)
+    conn |> render_hub_content(hub, "homepage")
+  end
+
   def render_for_path("/", params, conn) do
     if !Enum.empty?(params) || Ret.Account.has_accounts?() do
       conn |> render_index
@@ -117,16 +144,31 @@ defmodule RetWeb.PageController do
     |> render_avatar_content(conn)
   end
 
-  def render_for_path("/link", _params, conn), do: conn |> render_page("link.html", :hubs, "link-meta.html")
-  def render_for_path("/link/", _params, conn), do: conn |> render_page("link.html", :hubs, "link-meta.html")
+  def render_for_path("/link", _params, conn),
+    do:
+      conn
+      |> put_hub_headers("hub")
+      |> render_page("link.html", :hubs, "link-meta.html")
+
+  def render_for_path("/link/", _params, conn),
+    do:
+      conn
+      |> put_hub_headers("hub")
+      |> render_page("link.html", :hubs, "link-meta.html")
 
   def render_for_path("/link/" <> hub_identifier_and_slug, _params, conn) do
     hub_identifier = hub_identifier_and_slug |> String.split("/") |> List.first()
-    conn |> redirect_to_hub_identifier(hub_identifier)
+
+    conn
+    |> put_hub_headers("link")
+    |> redirect_to_hub_identifier(hub_identifier)
   end
 
   def render_for_path("/discord", _params, conn), do: conn |> render_page("discord.html")
   def render_for_path("/discord/", _params, conn), do: conn |> render_page("discord.html")
+
+  def render_for_path("/cloud", _params, conn), do: conn |> render_page("cloud.html")
+  def render_for_path("/cloud/", _params, conn), do: conn |> render_page("cloud.html")
 
   def render_for_path("/spoke", _params, conn), do: conn |> render_page("index.html", :spoke, "spoke-index-meta.html")
 
@@ -271,25 +313,7 @@ defmodule RetWeb.PageController do
   end
 
   defp render_index(conn, _method) do
-    {app_config, app_config_script, app_config_csp} = generate_app_config()
-
-    index_meta_tags =
-      Phoenix.View.render_to_string(
-        RetWeb.PageView,
-        "index-meta.html",
-        root_url: RetWeb.Endpoint.url(),
-        translations: app_config["translations"]["en"],
-        app_config_script: {:safe, app_config_script}
-      )
-
-    chunks =
-      chunks_for_page("index.html", :hubs)
-      |> List.insert_at(1, index_meta_tags)
-
-    conn
-    |> append_csp("script-src", app_config_csp)
-    |> put_hub_headers("hub")
-    |> render_chunks(chunks, "text/html; charset=utf-8")
+    conn |> render_homepage_content(get_app_config_value("features|default_room_id"))
   end
 
   defp put_hub_headers(conn, entity_type) do

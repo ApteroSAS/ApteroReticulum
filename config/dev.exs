@@ -4,7 +4,7 @@ host = System.get_env("MAIN_HOST")
 cors_proxy_host = "hubs-proxy.local"
 
 # To run reticulum across a LAN for local testing, uncomment and change the line below to the LAN IP
-# host = "192.168.1.27"
+# host = cors_proxy_host = "192.168.1.27"
 
 janus_host = System.get_env("JANUS_HOST")
 janus_port = System.get_env("JANUS_PORT")
