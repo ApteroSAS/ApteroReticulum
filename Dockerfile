@@ -1,4 +1,4 @@
-FROM elixir:1.9.4
+FROM elixir:1.10.1
 RUN apt-get update
 RUN apt remove cmdtest
 RUN curl -sL https://deb.nodesource.com/setup_10.x | bash

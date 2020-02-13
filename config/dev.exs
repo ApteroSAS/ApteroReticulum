@@ -74,8 +74,6 @@ config :logger, :console, format: "[$level] $message\n"
 # in production as building large stacktraces may be expensive.
 config :phoenix, :stacktrace_depth, 20
 
-env_db_host = "#{System.get_env("DB_HOST")}"
-
 # Configure your database
 config :ret, Ret.Repo,
   username: System.get_env("DB_USER"),
@@ -213,11 +211,12 @@ config :ret, Ret.Meta, phx_host: host
 config :ret, Ret.Locking,
   lock_timeout_ms: 1000 * 60 * 15,
   session_lock_db: [
-    username: "postgres",
-    password: "postgres",
-    database: "ret_dev",
-    hostname: if(env_db_host == "", do: "localhost", else: env_db_host)
+    username: System.get_env("DB_USER"),
+    password: System.get_env("DB_PWD"),
+    database: System.get_env("DB_NAME"),
+    hostname: System.get_env("DB_HOST")
   ]
+
 
 config :ret, Ret.Repo.Migrations.AdminSchemaInit, postgrest_password: "password"
 config :ret, Ret.StatsJob, node_stats_enabled: false, node_gauges_enabled: false
