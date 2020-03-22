@@ -43,6 +43,7 @@ defmodule Ret.Mixfile do
       {:phoenix_html, "~> 2.13"},
       {:phoenix_live_reload, "~> 1.2", only: :dev},
       {:gettext, "~> 0.17"},
+      {:cowboy, "~> 2.6.3"},
       {:plug_cowboy, "~> 2.0"},
       {:distillery, "~> 2.0"},
       {:peerage, "~> 1.0"},
@@ -76,7 +77,10 @@ defmodule Ret.Mixfile do
       {:reverse_proxy_plug,
        git: "https://github.com/mozillareality/reverse_proxy_plug.git", branch: "reticulum/master"},
       {:oauther, "~> 1.1"},
-      {:jason, "~> 1.1"}
+      {:jason, "~> 1.1"},
+      {:mix_test_watch, "~> 1.0", only: :dev, runtime: false},
+      {:ex_json_schema, "~> 0.7.3"},
+      {:observer_cli, "~> 1.5"}
     ]
   end
 
