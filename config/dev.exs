@@ -2,6 +2,8 @@ use Mix.Config
 
 host = System.get_env("MAIN_HOST")
 cors_proxy_host = "hubs-proxy.local"
+assets_host = "hubs-assets.local"
+link_host = "hubs-link.local"
 
 # To run reticulum across a LAN for local testing, uncomment and change the line below to the LAN IP
 # host = cors_proxy_host = "192.168.1.27"
@@ -24,6 +26,9 @@ config :ret, RetWeb.Endpoint,
     otp_app: :ret
   ],
   cors_proxy_url: [scheme: "http", host: cors_proxy_host, port: 80],
+  assets_url: [scheme: "https", host: assets_host, port: 4000],
+  link_url: [scheme: "https", host: link_host, port: 4000],
+  imgproxy_url: [scheme: "http", host: host, port: 5000],
   debug_errors: true,
   code_reloader: true,
   check_origin: false,
