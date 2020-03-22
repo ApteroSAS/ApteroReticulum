@@ -22,7 +22,7 @@
 <% end %>
 
 <meta name="twitter:title" content="<%= @translations["app-full-name"] || @translations["app-name"] %>">
-<meta name="twitter:image" content="<%= @root_url %>/app-thumbnail.png">
+<meta name="twitter:image" content="<%= @root_url %>/data/app-thumbnail.png">
 <meta name="twitter:description" content="<%= @translations["app-tagline"] %>">
 
 <!-- Microsoft Edge -->

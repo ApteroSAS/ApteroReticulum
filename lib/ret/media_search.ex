@@ -685,7 +685,7 @@ defmodule Ret.MediaSearch do
       if scene_or_scene_listing do
         %{preview: %{url: scene_or_scene_listing.screenshot_owned_file |> OwnedFile.uri_for() |> URI.to_string()}}
       else
-        %{preview: %{url: "#{RetWeb.Endpoint.url()}/app-thumbnail.png"}}
+        %{preview: %{url: "#{RetWeb.Endpoint.url()}/data/app-thumbnail.png"}}
       end
     
     scene_id = if scene_or_scene_listing do

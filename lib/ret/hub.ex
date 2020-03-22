@@ -287,7 +287,7 @@ defmodule Ret.Hub do
   end
 
   def image_url_for(%Hub{scene: nil, scene_listing: nil}) do
-    "#{RetWeb.Endpoint.url()}/app-thumbnail.png"
+    "#{RetWeb.Endpoint.url()}/data/app-thumbnail.png"
   end
 
   def image_url_for(%Hub{scene: scene}) when scene != nil do
