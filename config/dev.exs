@@ -29,6 +29,7 @@ config :ret, RetWeb.Endpoint,
   assets_url: [scheme: "https", host: assets_host, port: 4000],
   link_url: [scheme: "https", host: link_host, port: 4000],
   imgproxy_url: [scheme: "http", host: host, port: 5000],
+  video360URL: System.get_env("VIDEO360_SERVICE_URL"),
   debug_errors: true,
   code_reloader: true,
   check_origin: false,
@@ -219,7 +220,6 @@ config :ret, Ret.Locking,
     database: System.get_env("DB_NAME"),
     hostname: System.get_env("DB_HOST")
   ]
-
 
 config :ret, Ret.Repo.Migrations.AdminSchemaInit, postgrest_password: "password"
 config :ret, Ret.StatsJob, node_stats_enabled: false, node_gauges_enabled: false

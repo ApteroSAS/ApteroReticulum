@@ -96,6 +96,25 @@ defmodule RetWeb.Api.V1.MediaSearchController do
     end
   end
 
+  def index(conn, %{"source" => source, "user" => user} = params)
+      when source in ["video360"] do
+    #Just forward the data
+    # For local dev, allow insecure SSL because of webpack server
+    url = module_config(:video360URL) |> IO.inspect
+    account = conn |> Guardian.Plug.current_resource()
+    if(user && account && account.account_id)do
+      Map.put(params,:user,account.account_id)
+    end
+
+    payload = params |> IO.inspect |> Poison.encode!()
+    case HTTPoison.post(url, payload, [{"Content-Type", "application/json"}]) do
+      {:ok, %HTTPoison.Response{status_code: 200} = resp} ->
+        conn |> render("index.json", results: Poison.decode!(resp.body |> IO.inspect))
+      _ ->
+        conn |> send_resp(404, "")
+    end
+  end
+
   # For Google services, increase cache duration for landing pages by using long-lived cache, due to quotas.
   defp cache_for_query(%Ret.MediaSearchQuery{source: source, q: nil})
        when source == "youtube_videos" or source == "poly",
@@ -106,4 +125,6 @@ defmodule RetWeb.Api.V1.MediaSearchController do
   def index(conn) do
     conn |> send_resp(422, "")
   end
+
+  defp module_config(key), do: Application.get_env(:ret, RetWeb.Endpoint)[key]
 end
