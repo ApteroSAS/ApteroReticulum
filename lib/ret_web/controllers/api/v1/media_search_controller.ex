@@ -97,19 +97,24 @@ defmodule RetWeb.Api.V1.MediaSearchController do
   end
 
   def index(conn, %{"source" => source, "user" => user} = params)
-      when source in ["video360"] do
+      when source in ["videos360"] do
     #Just forward the data
     # For local dev, allow insecure SSL because of webpack server
-    url = module_config(:video360URL) |> IO.inspect
+    url = module_config(:video360URL)
     account = conn |> Guardian.Plug.current_resource()
+
+    if(user=="myself" && account && account.account_id)do
+      Map.put(params,:user,account.account_id)
+    end
+
     if(user && account && account.account_id)do
       Map.put(params,:user,account.account_id)
     end
 
-    payload = params |> IO.inspect |> Poison.encode!()
+    payload = params |> Poison.encode!()
     case HTTPoison.post(url, payload, [{"Content-Type", "application/json"}]) do
       {:ok, %HTTPoison.Response{status_code: 200} = resp} ->
-        conn |> render("index.json", results: Poison.decode!(resp.body |> IO.inspect))
+        conn |> render("index.json", results: Poison.decode!(resp.body))
       _ ->
         conn |> send_resp(404, "")
     end
