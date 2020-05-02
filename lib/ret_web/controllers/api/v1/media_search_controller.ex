@@ -116,20 +116,26 @@ defmodule RetWeb.Api.V1.MediaSearchController do
     account = conn
               |> Guardian.Plug.current_resource()
 
-    if(account && account.account_id)do
-      Map.put(params, :user, account.account_id)
+    params = if(account && account.account_id)do
+      Map.put(params, "user", account.account_id)
+    else
+        params
     end
 
-    if(filter=="my-videos-live") do
-      Map.put(params, :filter, "live-2d")
+    params = if(filter=="my-videos-live") do
+      Map.put(params, "filter", "live-2d")
+    else
+      params
     end
 
-    if(filter=="my-videos-360-live") do
-      Map.put(params, :filter, "live-360")
+    params = if(filter=="my-videos-360-live") do
+      Map.put(params, "filter", "live-360")
+    else
+      params
     end
 
-    payload = params
-              |> Poison.encode!()
+    payload = params |> Poison.encode!()
+    IO.inspect(params)
     case HTTPoison.post(url, payload, [{"Content-Type", "application/json"}]) do
       {:ok, %HTTPoison.Response{status_code: 200} = resp} ->
         conn
