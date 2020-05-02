@@ -12,12 +12,15 @@ defmodule RetWeb.Api.V1.MediaSearchController do
       }
       |> Ret.MediaSearch.search()
 
-    conn |> render("index.json", results: results)
+    conn
+    |> render("index.json", results: results)
   end
 
   def index(conn, %{"source" => "sketchfab", "user" => user}) do
-    {:commit, results} = %Ret.MediaSearchQuery{source: "sketchfab", user: user} |> Ret.MediaSearch.search()
-    conn |> render("index.json", results: results)
+    {:commit, results} = %Ret.MediaSearchQuery{source: "sketchfab", user: user}
+                         |> Ret.MediaSearch.search()
+    conn
+    |> render("index.json", results: results)
   end
 
   def index(conn, %{"source" => "scene_listings"} = params) do
@@ -30,7 +33,8 @@ defmodule RetWeb.Api.V1.MediaSearchController do
       }
       |> Ret.MediaSearch.search()
 
-    conn |> render("index.json", results: results)
+    conn
+    |> render("index.json", results: results)
   end
 
   def index(conn, %{"source" => "avatar_listings"} = params) do
@@ -44,12 +48,14 @@ defmodule RetWeb.Api.V1.MediaSearchController do
       }
       |> Ret.MediaSearch.search()
 
-    conn |> render("index.json", results: results)
+    conn
+    |> render("index.json", results: results)
   end
 
   def index(conn, %{"source" => source, "user" => user} = params)
       when source in ["scenes", "avatars", "favorites", "assets", "objects"] do
-    account = conn |> Guardian.Plug.current_resource()
+    account = conn
+              |> Guardian.Plug.current_resource()
 
     if account && account.account_id == String.to_integer(user) do
       {:commit, results} =
@@ -63,14 +69,17 @@ defmodule RetWeb.Api.V1.MediaSearchController do
         }
         |> Ret.MediaSearch.search()
 
-      conn |> render("index.json", results: results)
+      conn
+      |> render("index.json", results: results)
     else
-      conn |> send_resp(401, "You can only search #{source} by user for your own account.")
+      conn
+      |> send_resp(401, "You can only search #{source} by user for your own account.")
     end
   end
 
   def index(conn, %{"source" => source}) when source in ["favorites"] do
-    conn |> send_resp(401, "Missing account id for favorites search.")
+    conn
+    |> send_resp(401, "Missing account id for favorites search.")
   end
 
   def index(conn, %{"source" => source} = params)
@@ -86,37 +95,48 @@ defmodule RetWeb.Api.V1.MediaSearchController do
 
     case Cachex.fetch(cache_for_query(query), query) do
       {_status, nil} ->
-        conn |> send_resp(404, "")
+        conn
+        |> send_resp(404, "")
 
       {_status, %Ret.MediaSearchResult{} = results} ->
-        conn |> render("index.json", results: results)
+        conn
+        |> render("index.json", results: results)
 
       _ ->
-        conn |> send_resp(404, "")
+        conn
+        |> send_resp(404, "")
     end
   end
 
-  def index(conn, %{"source" => source, "user" => user} = params)
-      when source in ["videos360"] do
+  def index(conn, %{"source" => source, "user" => user, "filter" => filter} = params)
+      when source in ["videos360", "videos"] and filter in ["my-videos-live", "my-videos-360-live"] do
     #Just forward the data
     # For local dev, allow insecure SSL because of webpack server
     url = module_config(:video360URL)
-    account = conn |> Guardian.Plug.current_resource()
+    account = conn
+              |> Guardian.Plug.current_resource()
 
-    if(user=="myself" && account && account.account_id)do
-      Map.put(params,:user,account.account_id)
+    if(account && account.account_id)do
+      Map.put(params, :user, account.account_id)
     end
 
-    if(user && account && account.account_id)do
-      Map.put(params,:user,account.account_id)
+    if(filter=="my-videos-live") do
+      Map.put(params, :filter, "live-2d")
     end
 
-    payload = params |> Poison.encode!()
+    if(filter=="my-videos-360-live") do
+      Map.put(params, :filter, "live-360")
+    end
+
+    payload = params
+              |> Poison.encode!()
     case HTTPoison.post(url, payload, [{"Content-Type", "application/json"}]) do
       {:ok, %HTTPoison.Response{status_code: 200} = resp} ->
-        conn |> render("index.json", results: Poison.decode!(resp.body))
+        conn
+        |> render("index.json", results: Poison.decode!(resp.body))
       _ ->
-        conn |> send_resp(404, "")
+        conn
+        |> send_resp(404, "")
     end
   end
 
@@ -128,7 +148,8 @@ defmodule RetWeb.Api.V1.MediaSearchController do
   defp cache_for_query(_query), do: :media_search_results
 
   def index(conn) do
-    conn |> send_resp(422, "")
+    conn
+    |> send_resp(422, "")
   end
 
   defp module_config(key), do: Application.get_env(:ret, RetWeb.Endpoint)[key]
