@@ -122,6 +122,7 @@ defmodule RetWeb.Router do
       resources("/hubs", Api.V1.HubController, only: [:update])
       resources("/assets", Api.V1.AssetsController, only: [:create, :delete])
       post("/twitter/tweets", Api.V1.TwitterController, :tweets)
+      post("/secure/proxy", Api.V1.SecureProxy, :handle)
 
       resources("/projects", Api.V1.ProjectController, only: [:index, :show, :create, :update, :delete]) do
         post("/publish", Api.V1.ProjectController, :publish)
@@ -145,7 +146,6 @@ defmodule RetWeb.Router do
 
     scope "/v1", as: :api_v1 do
       resources("/media", Api.V1.MediaController, only: [:create])
-      post("/secure/proxy", Api.V1.SecureProxy, :handle)
     end
   end
 
