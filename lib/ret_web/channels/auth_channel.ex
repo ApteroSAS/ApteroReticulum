@@ -19,6 +19,33 @@ defmodule RetWeb.AuthChannel do
     {:ok, %{session_id: socket.assigns.session_id}, socket}
   end
 
+  def handle_in("auth_token_request", %{"email" => email, "origin" => origin, "authtoken" => authtoken}, socket) do
+    if !Map.get(socket.assigns, :used) do
+      socket = socket |> assign(:used, true)
+
+      account = email |> Account.account_for_email()
+      account_disabled = account && account.state == :disabled
+      #TODO Security perform some kind of authtoken verification
+
+      if !account_disabled && (can?(nil, create_account(nil)) || !!account) do
+        # Create token
+        %LoginToken{token: token, payload_key: payload_key} = LoginToken.new_login_token_for_email(email)
+        encrypted_payload = %{"email" => email} |> Poison.encode!() |> Crypto.encrypt(payload_key) |> :base64.encode()
+
+        payload = %{
+          auth_topic: socket.topic,
+          auth_token: token,
+          auth_origin: origin,
+          auth_payload: encrypted_payload
+        }
+        push(socket, "auth_token_resp", payload)
+      end
+      {:noreply, socket}
+    else
+      {:reply, {:error, "Already sent"}, socket}
+    end
+  end
+
   def handle_in("auth_request", %{"email" => email, "origin" => origin}, socket) do
     if !Map.get(socket.assigns, :used) do
       socket = socket |> assign(:used, true)
