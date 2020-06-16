@@ -428,6 +428,25 @@ defmodule Ret.Hub do
     end
   end
 
+  def janus_port do
+    Application.get_env(:ret, Ret.JanusLoadStatus)[:janus_port]
+  end
+
+  def generate_turn_info do
+    if Ret.Coturn.enabled?() do
+      {username, credential} = Ret.Coturn.generate_credentials()
+
+      transports =
+        (Application.get_env(:ret, Ret.Coturn)[:public_tls_ports] || "5349")
+        |> String.split(",")
+        |> Enum.map(&%{port: &1 |> Integer.parse() |> elem(0)})
+
+      %{enabled: true, username: username, credential: credential, transports: transports}
+    else
+      %{enabled: false}
+    end
+  end
+
   defp add_default_member_permissions_to_changeset(changeset) do
     if Ret.AppConfig.get_config_bool("features|restrictive_rooms") do
       changeset |> put_change(:member_permissions, @default_restrictive_member_permissions |> member_permissions_to_int)

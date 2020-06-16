@@ -44,6 +44,14 @@ config :ret, Ret.Repo,
   template: "template0",
   pool_size: 10
 
+config :ret, Ret.SessionLockRepo,
+  username: "postgres",
+  password: "postgres",
+  database: "ret_production",
+  hostname: "localhost",
+  template: "template0",
+  pool_size: 10
+
 # ## SSL Support
 #
 # To get SSL working, you will need to add the `https` key
@@ -106,6 +114,9 @@ config :ret, Ret.Scheduler,
 
     # Keep database warm when connected users
     {{:cron, "*/3 * * * *"}, {Ret.DbWarmerJob, :warm_db_if_has_ccu, []}},
+
+    # Rotate TURN secrets if enabled
+    {{:cron, "*/5 * * * *"}, {Ret.Coturn, :rotate_secrets, []}},
 
     # Various maintenence routines
     {{:cron, "0 10 * * *"}, {Ret.Storage, :vacuum, []}},

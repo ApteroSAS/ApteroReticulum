@@ -89,6 +89,14 @@ config :ret, Ret.Repo,
   template: "template0",
   pool_size: 10
 
+config :ret, Ret.SessionLockRepo,
+  username: System.get_env("DB_USER"),
+  password: System.get_env("DB_PWD"),
+  database: System.get_env("DB_NAME"),
+  hostname: System.get_env("DB_HOST"),
+  template: "template0",
+  pool_size: 10
+
 config :ret, RetWeb.Plugs.HeaderAuthorization,
   header_name: "x-ret-admin-access-key",
   header_value: "admin-only"
@@ -143,11 +151,12 @@ asset_hosts =
     "https://assets-prod.reticulum.io https://asset-bundles-dev.reticulum.io https://asset-bundles-prod.reticulum.io"
 
 websocket_hosts =
-  "https://localhost:80 https://localhost:8080 wss://localhost:80 " <>
-  "http://localhost:80 http://localhost:8080 ws://localhost:80 " <>
+    "https://localhost:80 https://localhost:8080 wss://localhost:80 " <>
+    "http://localhost:80 http://localhost:8080 ws://localhost:80 " <>  
     "https://#{host}:80 https://#{host}:8080 wss://#{host}:80 wss://#{host}:8080 wss://#{host}:8989 wss://#{host}:9090 " <>
-    "http://#{host}:80 http://#{host}:8080 ws://#{host}:80 ws://#{host}:8080 ws://#{host}:8989 ws://#{host}:9090 " <>
-    "wss://#{janus_host}:#{janus_port} wss://prod-janus.reticulum.io wss://#{host}:80 wss://#{host}:8080 https://#{host}:8080 https://hubs.local:8080 wss://hubs.local:8080"
+    "https://localhost:4000 https://localhost:8080 wss://localhost:4000 " <>
+    "https://#{host}:4000 https://#{host}:8080 wss://#{host}:4000 wss://#{host}:8080 wss://#{host}:8989 wss://#{host}:9090 " <>
+    "wss://#{host}:4000 wss://#{host}:8080 https://#{host}:8080 https://hubs.local:8080 wss://hubs.local:8080"
 
 config :ret, RetWeb.Plugs.AddCSP,
   script_src: asset_hosts,
@@ -224,3 +233,4 @@ config :ret, Ret.Locking,
 config :ret, Ret.Repo.Migrations.AdminSchemaInit, postgrest_password: "password"
 config :ret, Ret.StatsJob, node_stats_enabled: false, node_gauges_enabled: false
 
+config :ret, Ret.Coturn, realm: "ret"

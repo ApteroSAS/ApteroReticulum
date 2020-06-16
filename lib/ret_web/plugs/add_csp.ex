@@ -43,24 +43,36 @@ defmodule RetWeb.Plugs.AddCSP do
     storage_url = Application.get_env(:ret, Ret.Storage)[:host]
     cors_proxy_url = config_url(:cors_proxy_url)
     janus_port = Application.get_env(:ret, Ret.JanusLoadStatus)[:janus_port]
+    default_janus_host = Application.get_env(:ret, Ret.JanusLoadStatus)[:default_janus_host]
     ret_host = Ret.Meta.get_meta(include_repo: false)[:phx_host]
     ret_domain = ret_host |> String.split(".") |> Enum.take(-2) |> Enum.join(".")
     ret_port = RetWeb.Endpoint.config(:url) |> Keyword.get(:port)
     is_subdomain = ret_host |> String.split(".") |> length > 2
     link_url = config_url(:link_url)
     # legacy
-    thumbnail_url =
-      config_url(:thumbnail_url) ||
-        cors_proxy_url |> String.replace("cors-proxy", "nearspark")
+    thumbnail_url = config_url(:thumbnail_url) || cors_proxy_url |> String.replace("cors-proxy", "nearspark")
+
+    # TODO: The https janus port CSP rules (including the default) can be removed after dialog is deployed,
+    # since they are used to snoop and see what SFU it is.
+    default_janus_csp_rule =
+      if default_janus_host,
+        do: "wss://#{default_janus_host}:#{janus_port} https://#{default_janus_host}:#{janus_port}",
+        else: ""
 
     ret_direct_connect =
       if is_subdomain do
-        "https://*.#{ret_domain}:#{ret_port} wss://*.#{ret_domain}:#{ret_port} wss://*.#{ret_domain}:#{janus_port}"
+        "https://*.#{ret_domain}:#{ret_port} wss://*.#{ret_domain}:#{ret_port} wss://*.#{ret_domain}:#{janus_port} https://*.#{
+          ret_domain
+        }:#{janus_port} #{default_janus_csp_rule}"
       else
-        "https://#{ret_host}:#{ret_port} wss://#{ret_host}:#{janus_port} wss://#{ret_host}:#{ret_port}"
+        "https://#{ret_host}:#{ret_port} wss://#{ret_host}:#{janus_port} wss://#{ret_host}:#{ret_port} https://#{
+          ret_host
+        }:#{janus_port} #{default_janus_csp_rule}"
       end
 
-    "default-src 'none'; manifest-src #{custom_rules[:manifest_src]} 'self'; script-src #{custom_rules[:script_src]} #{storage_url} #{assets_url} 'self' 'unsafe-eval' 'sha256-ViVvpb0oYlPAp7R8ZLxlNI6rsf7E7oz8l1SgCIXgMvM=' 'sha256-hsbRcgUBASABDq7qVGVTpbnWq/ns7B+ToTctZFJXYi8=' 'sha256-MIpWPgYj31kCgSUFc0UwHGQrV87W6N5ozotqfxxQG0w=' 'sha256-buF6N8Z4p2PuaaeRUjm7mxBpPNf4XlCT9Fep83YabbM=' 'sha256-/S6PM16MxkmUT7zJN2lkEKFgvXR7yL4Z8PCrRrFu4Q8=' https://www.google-analytics.com #{
+    "default-src 'none'; manifest-src #{custom_rules[:manifest_src]} 'self'; script-src #{custom_rules[:script_src]} #{
+      storage_url
+    } #{assets_url} 'self' 'unsafe-eval' 'sha256-ViVvpb0oYlPAp7R8ZLxlNI6rsf7E7oz8l1SgCIXgMvM=' 'sha256-hsbRcgUBASABDq7qVGVTpbnWq/ns7B+ToTctZFJXYi8=' 'sha256-MIpWPgYj31kCgSUFc0UwHGQrV87W6N5ozotqfxxQG0w=' 'sha256-buF6N8Z4p2PuaaeRUjm7mxBpPNf4XlCT9Fep83YabbM=' 'sha256-/S6PM16MxkmUT7zJN2lkEKFgvXR7yL4Z8PCrRrFu4Q8=' https://www.google-analytics.com #{
       storage_url
     } #{assets_url} https://aframe.io https://www.youtube.com https://s.ytimg.com; child-src #{custom_rules[:child_src]} 'self' blob:; worker-src #{
       custom_rules[:worker_src]
@@ -76,7 +88,9 @@ defmodule RetWeb.Plugs.AddCSP do
       custom_rules[:media_src]
     } 'self' #{cors_proxy_url} #{storage_url} #{assets_url} #{thumbnail_url} https://www.youtube.com *.googlevideo.com data: blob:; frame-src #{
       custom_rules[:frame_src]
-    } https://www.youtube.com https://docs.google.com 'self'; base-uri 'none'; form-action #{custom_rules[:form_action]} 'self';"
+    } https://www.youtube.com https://docs.google.com https://player.vimeo.com 'self'; base-uri 'none'; form-action #{
+      custom_rules[:form_action]
+    } 'self';"
   end
 
   defp get_custom_rules do

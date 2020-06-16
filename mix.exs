@@ -33,12 +33,14 @@ defmodule Ret.Mixfile do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
+      {:ecto_boot_migration, "~> 0.2.0"},
       {:phoenix, "~> 1.4.0"},
       {:phoenix_pubsub, "~> 1.1"},
       {:phoenix_ecto, "~> 4.0"},
       {:plug, "~> 1.7"},
-      {:ecto, "~> 3.1"},
-      {:ecto_sql, "~> 3.1"},
+      # Avoid 3.4.0 for now bc https://github.com/elixir-ecto/ecto/issues/3246
+      {:ecto, "~> 3.3.0"},
+      {:ecto_sql, "~> 3.3.0"},
       {:postgrex, ">= 0.0.0"},
       {:phoenix_html, "~> 2.13"},
       {:phoenix_live_reload, "~> 1.2", only: :dev},
@@ -56,7 +58,7 @@ defmodule Ret.Mixfile do
       {:credo, "~> 1.1", only: [:dev, :test], runtime: false},
       {:plug_attack, "~> 0.4"},
       {:ecto_enum, "~> 1.3"},
-      {:the_end, "~> 1.1.0"},
+      {:the_end, git: "https://github.com/mozillareality/the_end.git", branch: "bug/phoenix-14"},
       {:cachex, "~> 3.2"},
       {:retry, "~> 0.13"},
       {:open_graph, "~> 0.0.3"},
@@ -78,6 +80,7 @@ defmodule Ret.Mixfile do
        git: "https://github.com/mozillareality/reverse_proxy_plug.git", branch: "reticulum/master"},
       {:oauther, "~> 1.1"},
       {:jason, "~> 1.1"},
+      {:ex_rated, "~> 1.3.3"},
       {:mix_test_watch, "~> 1.0", only: :dev, runtime: false},
       {:ex_json_schema, "~> 0.7.3"},
       {:observer_cli, "~> 1.5"}

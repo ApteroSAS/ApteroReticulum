@@ -3,8 +3,7 @@ defmodule RetWeb.AuthChannel do
 
   use RetWeb, :channel
   import Canada, only: [can?: 2]
-
-  alias Ret.{Statix, LoginToken, Account, Crypto}
+  alias Ret.{Statix, OAuthToken, LoginToken, Account, Crypto}
 
   intercept(["auth_credentials"])
 
@@ -21,16 +20,22 @@ defmodule RetWeb.AuthChannel do
 
   def handle_in("auth_token_request", %{"email" => email, "origin" => origin, "authtoken" => authtoken}, socket) do
     if !Map.get(socket.assigns, :used) do
-      socket = socket |> assign(:used, true)
+      socket = socket
+               |> assign(:used, true)
 
-      account = email |> Account.account_for_email()
+      account = email
+                |> Account.account_for_email()
       account_disabled = account && account.state == :disabled
       #TODO Security perform some kind of authtoken verification
-
+      #case OAuthToken.decode_and_verify(authtoken) do
+      #  {:ok, _} ->
       if !account_disabled && (can?(nil, create_account(nil)) || !!account) do
         # Create token
         %LoginToken{token: token, payload_key: payload_key} = LoginToken.new_login_token_for_email(email)
-        encrypted_payload = %{"email" => email} |> Poison.encode!() |> Crypto.encrypt(payload_key) |> :base64.encode()
+        encrypted_payload = %{"email" => email}
+                            |> Poison.encode!()
+                            |> Crypto.encrypt(payload_key)
+                            |> :base64.encode()
 
         payload = %{
           auth_topic: socket.topic,
@@ -40,6 +45,8 @@ defmodule RetWeb.AuthChannel do
         }
         push(socket, "auth_token_resp", payload)
       end
+      #end
+      #end
       {:noreply, socket}
     else
       {:reply, {:error, "Already sent"}, socket}
@@ -48,16 +55,21 @@ defmodule RetWeb.AuthChannel do
 
   def handle_in("auth_request", %{"email" => email, "origin" => origin}, socket) do
     if !Map.get(socket.assigns, :used) do
-      socket = socket |> assign(:used, true)
+      socket = socket
+               |> assign(:used, true)
 
-      account = email |> Account.account_for_email()
+      account = email
+                |> Account.account_for_email()
       account_disabled = account && account.state == :disabled
 
       if !account_disabled && (can?(nil, create_account(nil)) || !!account) do
         # Create token + send email
         %LoginToken{token: token, payload_key: payload_key} = LoginToken.new_login_token_for_email(email)
 
-        encrypted_payload = %{"email" => email} |> Poison.encode!() |> Crypto.encrypt(payload_key) |> :base64.encode()
+        encrypted_payload = %{"email" => email}
+                            |> Poison.encode!()
+                            |> Crypto.encrypt(payload_key)
+                            |> :base64.encode()
 
         signin_args = %{
           auth_topic: socket.topic,
@@ -69,7 +81,8 @@ defmodule RetWeb.AuthChannel do
         Statix.increment("ret.emails.auth.attempted", 1)
 
         if RetWeb.Email.enabled?() do
-          RetWeb.Email.auth_email(email, signin_args) |> Ret.Mailer.deliver_now()
+          RetWeb.Email.auth_email(email, signin_args)
+          |> Ret.Mailer.deliver_now()
         end
 
         Statix.increment("ret.emails.auth.sent", 1)
@@ -89,7 +102,10 @@ defmodule RetWeb.AuthChannel do
 
     case LoginToken.lookup_by_token(token) do
       %LoginToken{identifier_hash: identifier_hash, payload_key: payload_key} ->
-        decrypted_payload = auth_payload |> :base64.decode() |> Ret.Crypto.decrypt(payload_key) |> Poison.decode!()
+        decrypted_payload = auth_payload
+                            |> :base64.decode()
+                            |> Ret.Crypto.decrypt(payload_key)
+                            |> Poison.decode!()
 
         broadcast_credentials_and_payload(identifier_hash, decrypted_payload, socket)
 
@@ -125,8 +141,10 @@ defmodule RetWeb.AuthChannel do
   defp broadcast_credentials_and_payload(nil, _payload, _socket), do: nil
 
   defp broadcast_credentials_and_payload(identifier_hash, payload, socket) do
-    account = identifier_hash |> Account.account_for_login_identifier_hash(can?(nil, create_account(nil)))
-    credentials = account |> Account.credentials_for_account()
+    account = identifier_hash
+              |> Account.account_for_login_identifier_hash(can?(nil, create_account(nil)))
+    credentials = account
+                  |> Account.credentials_for_account()
     broadcast!(socket, "auth_credentials", %{credentials: credentials, payload: payload})
   end
 end
