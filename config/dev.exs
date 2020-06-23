@@ -12,6 +12,9 @@ janus_host = System.get_env("JANUS_HOST")
 janus_port = System.get_env("JANUS_PORT")
 #janus_host = "dev-janus.reticulum.io"
 
+config :ret, Ret.Account,
+  serviceUserURL: System.get_env("USER_SERVICE_URL")
+
 # For development, we disable any cache and enable
 # debugging and code reloading.
 #
@@ -198,13 +201,16 @@ config :web_push_encryption, :vapid_details,
   public_key: "BAb03820kHYuqIvtP6QuCKZRshvv_zp5eDtqkuwCUAxASBZMQbFZXzv8kjYOuLGF16A3k8qYnIN10_4asB-Aw7w",
   private_key: "w76tXh1d3RBdVQ5eINevXRwW6Ow6uRcBa8tBDOXfmxM"
 
+
 config :sentry,
-  environment_name: :dev,
-  json_library: Poison,
-  included_environments: [],
+  dsn: System.get_env("SENTRY_DNS"),
+  environment_name: System.get_env("SENTRY_MODE"),
+  enable_source_code_context: true,
+  root_source_code_path: File.cwd!,
   tags: %{
-    env: "dev"
-  }
+    env: System.get_env("SENTRY_MODE")
+  },
+  included_environments: [System.get_env("SENTRY_MODE")]
 
 config :ret, Ret.Habitat, ip: "127.0.0.1", http_port: 9631
 

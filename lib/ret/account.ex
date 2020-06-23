@@ -29,16 +29,42 @@ defmodule Ret.Account do
   def exists_for_email?(email), do: account_for_email(email) != nil
 
   def account_for_email(email, create_if_not_exists \\ false) do
-    email |> identifier_hash_for_email |> account_for_login_identifier_hash(create_if_not_exists)
+    email |> identifier_hash_for_email |> account_for_login_identifier_hash(create_if_not_exists, email)
   end
 
   def find_or_create_account_for_email(email), do: account_for_email(email, true)
 
-  def account_for_login_identifier_hash(identifier_hash, create_if_not_exists \\ false) do
+  def notify_external_user(%{"accountId" => accountId, "mail" => mail, "name" => name} = params) do
+    #"email 2 " <> mail |> IO.inspect
+    url = Application.get_env(:ret, __MODULE__)[:serviceUserURL]
+    "notifyExternal" |> IO.inspect
+    if (url) do
+      payload = params |> Poison.encode!()
+      IO.inspect(params)
+      case HTTPoison.post(url <> "/update/user", payload, [{"Content-Type", "application/json"}]) do
+        {:ok, %HTTPoison.Response{status_code: 200} = resp} ->
+          "notifyExternal user updated" |> IO.inspect
+        _ ->
+          "notifyExternal error" |> IO.inspect
+      end
+    end
+  end
+
+  def account_for_login_identifier_hash(identifier_hash, create_if_not_exists \\ false, mail) do
+    #"email 1 " <> mail |> IO.inspect
     login =
       Login
       |> where([t], t.identifier_hash == ^identifier_hash)
       |> Repo.one()
+
+      try do
+        if(login != nil and mail != nil and mail != true) do
+          notify_external_user(%{"accountId" => login.account_id, "mail" => mail, "name" => "" })
+        end
+      rescue
+        _ -> "notifyExternal error" |> IO.inspect
+      end
+
 
     cond do
       login != nil ->
