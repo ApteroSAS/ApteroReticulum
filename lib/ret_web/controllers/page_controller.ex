@@ -457,7 +457,7 @@ defmodule RetWeb.PageController do
     hub = Repo.get_by(Hub, hub_sid: hub_identifier) || Hub.get_by_entry_code_string(hub_identifier)
 
     case hub do
-      %Hub{} = hub -> conn |> redirect(to: "/room/#{hub.hub_sid}/#{hub.slug}")
+      %Hub{} = hub -> conn |> redirect(to: "/#{hub.hub_sid}/#{hub.slug}")
       _ -> conn |> send_resp(404, "")
     end
   end

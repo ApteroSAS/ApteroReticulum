@@ -34,7 +34,7 @@ config :ret, RetWeb.Endpoint,
   imgproxy_url: [scheme: "http", host: host, port: 5000],
   video360URL: System.get_env("VIDEO360_SERVICE_URL"),
   debug_errors: true,
-  code_reloader: true,
+  code_reloader: false,
   check_origin: false,
   secret_key_base: "txlMOtlaY5x3crvOCko4uV5PM29ul3zGo1oBGNO3cDXx+7GHLKqt0gR9qzgThxb5",
   allowed_origins: "*",
@@ -63,18 +63,6 @@ config :ret, RetWeb.Endpoint,
 # If desired, both `http:` and `https:` keys can be
 # configured to run both http and https servers on
 # different ports.
-
-# Watch static and templates for browser reloading.
-config :ret, RetWeb.Endpoint,
-  # static_url: [scheme: "https", host: "assets-prod.reticulum.io", port: 443],
-  live_reload: [
-    patterns: [
-      ~r{priv/static/.*(js|css|png|jpeg|jpg|gif|svg)$},
-      ~r{priv/gettext/.*(po)$},
-      ~r{lib/ret_web/views/.*(ex)$},
-      ~r{lib/ret_web/templates/.*(eex)$}
-    ]
-  ]
 
 # Do not include metadata nor timestamps in development logs
 config :logger, :console, format: "[$level] $message\n"
@@ -117,9 +105,9 @@ config :ret,
   bot_access_key: ""
 
 config :ret, Ret.PageOriginWarmer,
-  hubs_page_origin: "https://#{host}:8080",
-  admin_page_origin: "https://#{host}:8989",
-  spoke_page_origin: "https://#{host}:9090",
+  hubs_page_origin: "https://#{host}",
+  admin_page_origin: "https://#{host}",
+  spoke_page_origin: "https://#{host}",
   insecure_ssl: true
 
 config :ret, Ret.HttpUtils, insecure_ssl: true
@@ -219,9 +207,9 @@ config :ret, Ret.JanusLoadStatus, default_janus_host: janus_host, janus_port: ja
 config :ret, Ret.RoomAssigner, balancer_weights: [{600, 1}, {300, 50}, {0, 500}]
 
 config :ret, RetWeb.PageController,
-  skip_cache: true,
-  assets_path: "storage/assets",
-  docs_path: "storage/docs"
+  skip_cache: false,
+  assets_path: "/ret/storage/assets",
+  docs_path: "/ret/storage/docs"
 
 config :ret, Ret.HttpUtils, insecure_ssl: true
 
@@ -236,7 +224,7 @@ config :ret, Ret.Locking,
     hostname: System.get_env("DB_HOST")
   ]
 
-config :ret, Ret.Repo.Migrations.AdminSchemaInit, postgrest_password: "password"
+config :ret, Ret.Repo.Migrations.AdminSchemaInit, postgrest_password: System.get_env("DB_PWD")
 config :ret, Ret.StatsJob, node_stats_enabled: false, node_gauges_enabled: false
 
 config :ret, Ret.Coturn, realm: "ret"

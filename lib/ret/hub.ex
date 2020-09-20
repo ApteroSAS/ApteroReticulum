@@ -283,7 +283,7 @@ defmodule Ret.Hub do
   end
 
   def url_for(%Hub{} = hub) do
-    "#{RetWeb.Endpoint.url()}/room/#{hub.hub_sid}/#{hub.slug}"
+    "#{RetWeb.Endpoint.url()}/#{hub.hub_sid}/#{hub.slug}"
   end
 
   def image_url_for(%Hub{scene: nil, scene_listing: nil}) do

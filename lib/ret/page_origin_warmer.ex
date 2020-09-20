@@ -22,7 +22,7 @@ defmodule Ret.PageOriginWarmer do
          |> Enum.map(fn {k, vs} -> vs |> Enum.map(&{k, &1}) end)
          |> List.flatten()
 
-  def interval, do: :timer.seconds(15)
+  def interval, do: :timer.seconds(120)
 
   def execute(_state) do
     with hubs_page_origin when is_binary(hubs_page_origin) <- module_config(:hubs_page_origin),
