@@ -4,6 +4,11 @@ defmodule RetWeb.PageController do
   alias Plug.Conn
   import Ret.ConnUtils
 
+  ##
+  # NOTE: In addition to adding a route, you must add static html pages to the page_origin_warmer.ex
+  # file in order for them to work.
+  ##
+
   @configurable_assets %{
     app_config_favicon: {"favicon.ico", "images|favicon", "image/x-icon"},
     app_config_app_icon: {"app-icon.png", "images|app_icon", "image/png"},
@@ -192,6 +197,12 @@ defmodule RetWeb.PageController do
     |> redirect_to_hub_identifier(hub_identifier)
   end
 
+  def render_for_path("/signin", _params, conn), do: conn |> render_page("signin.html")
+  def render_for_path("/signin/", _params, conn), do: conn |> render_page("signin.html")
+
+  def render_for_path("/verify", _params, conn), do: conn |> render_page("verify.html")
+  def render_for_path("/verify/", _params, conn), do: conn |> render_page("verify.html")
+
   def render_for_path("/discord", _params, conn), do: conn |> render_page("discord.html")
   def render_for_path("/discord/", _params, conn), do: conn |> render_page("discord.html")
 
@@ -212,8 +223,8 @@ defmodule RetWeb.PageController do
   def render_for_path("/hub.service.js", _params, conn),
     do: conn |> render_asset("hub.service.js", :hubs, "hub.service-meta.js")
 
-  def render_for_path("/stream-offline.png", _params, conn),
-    do: conn |> render_static_asset()
+  def render_for_path("/stream-offline.png", _params, conn), do: conn |> render_static_asset()
+  def render_for_path("/quota-error.png", _params, conn), do: conn |> render_static_asset()
 
   def render_for_path("/hubs/schema.toml", _params, conn), do: conn |> render_asset("schema.toml")
 

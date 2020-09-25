@@ -104,6 +104,7 @@ defmodule Ret.Hub do
     belongs_to(:scene_listing, Ret.SceneListing, references: :scene_listing_id)
     has_many(:web_push_subscriptions, Ret.WebPushSubscription, foreign_key: :hub_id)
     belongs_to(:created_by_account, Ret.Account, references: :account_id)
+    has_many(:hub_invites, Ret.HubInvite, foreign_key: :hub_id)
     has_many(:hub_bindings, Ret.HubBinding, foreign_key: :hub_id)
     has_many(:hub_role_memberships, Ret.HubRoleMembership, foreign_key: :hub_id)
 
@@ -112,6 +113,33 @@ defmodule Ret.Hub do
     field(:room_size, :integer)
 
     timestamps()
+  end
+
+  # Create new room, inserts into db
+  # returns newly created %Hub
+  def create_new_room(%{"name" => _name} = params, true = _add_to_db) do
+    scene_or_scene_listing = get_scene_or_scene_listing(params)
+
+    %Hub{}
+    |> changeset(scene_or_scene_listing, params)
+    |> Repo.insert()
+  end
+
+  # Create new room, does NOT insert into db
+  # returns newly created %Hub
+  def create_new_room(%{"name" => _name} = params, false = _add_to_db) do
+    scene_or_scene_listing = get_scene_or_scene_listing(params)
+
+    %Hub{}
+    |> changeset(scene_or_scene_listing, params)
+  end
+
+  defp get_scene_or_scene_listing(params) do
+    if is_nil(params["scene_id"]) do
+      SceneListing.get_random_default_scene_listing()
+    else
+      Scene.scene_or_scene_listing_by_sid(params["scene_id"])
+    end
   end
 
   def get_by_entry_code_string(entry_code_string) when is_binary(entry_code_string) do
@@ -186,6 +214,14 @@ defmodule Ret.Hub do
 
   def add_promotion_to_changeset(changeset, attrs) do
     changeset |> put_change(:allow_promotion, !!attrs["allow_promotion"])
+  end
+
+  def maybe_add_entry_mode_to_changeset(changeset, attrs) do
+    if attrs["entry_mode"] === nil do
+      changeset
+    else
+      changeset |> put_change(:entry_mode, attrs["entry_mode"])
+    end
   end
 
   def changeset_for_new_seen_occupant_count(%Hub{} = hub, occupant_count) do
