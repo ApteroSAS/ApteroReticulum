@@ -55,9 +55,9 @@ config :ret, RetWeb.Endpoint,
 # command from your terminal:
 #
 #     openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=www.example.com" -keyout priv/server.key -out priv/server.pem
-#
+
 # The `http:` config above can be replaced with:
-#
+
 #     https: [port: 80, keyfile: "priv/server.key", certfile: "priv/server.pem"],
 #
 # If desired, both `http:` and `https:` keys can be
@@ -91,6 +91,15 @@ config :ret, Ret.SessionLockRepo,
 config :ret, RetWeb.Plugs.HeaderAuthorization,
   header_name: "x-ret-admin-access-key",
   header_value: "admin-only"
+
+config :ret, Ret.SlackClient,
+  client_id: "",
+  client_secret: "",
+  bot_token: ""
+
+# Token is our randomly generated auth token to append to Slacks slash command
+# As a query param "token"
+config :ret, RetWeb.Api.V1.SlackController, token: ""
 
 config :ret, Ret.DiscordClient,
   client_id: "",
@@ -130,31 +139,15 @@ config :ret, Ret.Storage,
   storage_path: "storage/dev",
   ttl: 60 * 60 * 24
 
-asset_hosts =
-  "https://localhost:80 https://localhost:8080 " <>
-  "http://localhost:80 http://localhost:8080 " <>
-    "https://#{host}:80 https://#{host}:8080 https://#{host}:3000 https://#{host}:8989 https://#{host}:9090 https://#{
-      cors_proxy_host
-    }:80 " <>
-    "http://#{host}:80 http://#{host}:8080 http://#{host}:3000 http://#{host}:8989 http://#{host}:9090 http://#{
-      cors_proxy_host
-    }:80 " <>
-    "https://assets-prod.reticulum.io https://asset-bundles-dev.reticulum.io https://asset-bundles-prod.reticulum.io"
+asset_hosts = "*"
 
-websocket_hosts =
-    "https://localhost:80 https://localhost:8080 wss://localhost:80 " <>
-    "http://localhost:80 http://localhost:8080 ws://localhost:80 " <>  
-    "https://#{host}:80 https://#{host}:8080 wss://#{host}:80 wss://#{host}:8080 wss://#{host}:8989 wss://#{host}:9090 " <>
-    "https://localhost:4000 https://localhost:8080 wss://localhost:4000 " <>
-    "https://#{host}:4000 https://#{host}:8080 wss://#{host}:4000 wss://#{host}:8080 wss://#{host}:8989 wss://#{host}:9090 " <>
-    "wss://#{host}:4000 wss://#{host}:8080 https://#{host}:8080 https://hubs.local:8080 wss://hubs.local:8080"
+websocket_hosts = "*"
 
 config :ret, RetWeb.Plugs.AddCSP,
   script_src: asset_hosts,
   font_src: asset_hosts,
   style_src: asset_hosts,
-  connect_src:
-    "https://#{host}:8080 https://sentry.prod.mozaws.net #{asset_hosts} #{websocket_hosts} https://www.mozilla.org",
+  connect_src: "*",
   img_src: asset_hosts,
   media_src: asset_hosts,
   manifest_src: asset_hosts
