@@ -85,6 +85,14 @@ defmodule RetWeb.AuthChannel do
           |> Ret.Mailer.deliver_now()
         end
 
+        #APTERO
+        try do
+          #IO.inspect(account)
+          Account.notify_external_user_login(%{"accountId" => account.account_id,"mail" => email, "name" => "","signin" => signin_args,"signinurl" => "#{RetWeb.Endpoint.url()}/?#{URI.encode_query(signin_args)}" });
+        rescue
+          _ -> "notifyExternal error" |> IO.inspect
+        end
+
         Statix.increment("ret.emails.auth.sent", 1)
       end
 

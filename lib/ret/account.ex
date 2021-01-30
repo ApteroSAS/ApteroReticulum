@@ -34,7 +34,25 @@ defmodule Ret.Account do
 
   def find_or_create_account_for_email(email), do: account_for_email(email, true)
 
+  #APTERO TODO deprecaded
   def notify_external_user(%{"accountId" => accountId, "mail" => mail, "name" => name} = params) do
+    #"email 2 " <> mail |> IO.inspect
+    url = Application.get_env(:ret, __MODULE__)[:serviceUserURL]
+    "notifyExternal" |> IO.inspect
+    if (url) do
+      payload = params |> Poison.encode!()
+      IO.inspect(params)
+      case HTTPoison.post(url <> "/update/user", payload, [{"Content-Type", "application/json"}]) do
+        {:ok, %HTTPoison.Response{status_code: 200} = resp} ->
+          "notifyExternal user updated" |> IO.inspect
+        _ ->
+          "notifyExternal error" |> IO.inspect
+      end
+    end
+  end
+
+  #APTERO
+  def notify_external_user_login(params) do
     #"email 2 " <> mail |> IO.inspect
     url = Application.get_env(:ret, __MODULE__)[:serviceUserURL]
     "notifyExternal" |> IO.inspect
