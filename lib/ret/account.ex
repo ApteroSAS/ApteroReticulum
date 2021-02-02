@@ -46,7 +46,7 @@ defmodule Ret.Account do
         {:ok, %HTTPoison.Response{status_code: 200} = resp} ->
           "notifyExternal user updated" |> IO.inspect
         _ ->
-          "notifyExternal error" |> IO.inspect
+          "notifyExternal HTTP error" |> IO.inspect
       end
     end
   end
@@ -63,7 +63,7 @@ defmodule Ret.Account do
         {:ok, %HTTPoison.Response{status_code: 200} = resp} ->
           "notifyExternal user updated" |> IO.inspect
         _ ->
-          "notifyExternal error" |> IO.inspect
+          "notifyExternal HTTP error" |> IO.inspect
       end
     end
   end
@@ -80,7 +80,9 @@ defmodule Ret.Account do
           notify_external_user(%{"accountId" => login.account_id, "mail" => mail, "name" => "" })
         end
       rescue
-        _ -> "notifyExternal error" |> IO.inspect
+        e ->
+          IO.inspect("notifyExternal error")
+          IO.inspect(e)
       end
 
 
