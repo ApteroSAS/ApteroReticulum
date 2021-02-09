@@ -41,7 +41,7 @@ defmodule Ret.LoginToken do
       |> where([t], t.token == ^token)
       |> where(
         [t],
-        t.inserted_at > datetime_add(^NaiveDateTime.utc_now(), ^(@token_max_age * -1), "second")
+        t.inserted_at > datetime_add(^NaiveDateTime.utc_now(), ^(@token_max_age * -1), "minute")
       )
       |> Repo.one()
 
@@ -63,7 +63,7 @@ defmodule Ret.LoginToken do
       Ret.LoginToken
       |> where(
         [t],
-        t.inserted_at < datetime_add(^NaiveDateTime.utc_now(), ^(@token_max_age * -1), "second")
+        t.inserted_at < datetime_add(^NaiveDateTime.utc_now(), ^(@token_max_age * -1), "minute")
       )
       |> Repo.delete_all()
     end)
