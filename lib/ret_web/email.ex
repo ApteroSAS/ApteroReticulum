@@ -51,7 +51,8 @@ defmodule RetWeb.Email do
   end
 
   def enabled? do
-    !!Application.get_env(:ret, Ret.Mailer)[:adapter]
+    #!!Application.get_env(:ret, Ret.Mailer)[:adapter]
+    return false;
   end
 
   defp from_address do
