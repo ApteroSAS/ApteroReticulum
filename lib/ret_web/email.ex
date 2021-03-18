@@ -52,7 +52,7 @@ defmodule RetWeb.Email do
 
   def enabled? do
     #!!Application.get_env(:ret, Ret.Mailer)[:adapter]
-    return false;
+    false
   end
 
   defp from_address do

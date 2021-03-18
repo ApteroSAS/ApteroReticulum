@@ -27,6 +27,8 @@ config :ret, RetWeb.Endpoint,
   http: [
     port: 80,
     otp_app: :ret
+    keyfile: "#{System.get_env("PWD")}/priv/dev-ssl.key",
+    certfile: "#{System.get_env("PWD")}/priv/dev-ssl.cert"
   ],
   cors_proxy_url: [scheme: "http", host: cors_proxy_host, port: 80],
   assets_url: [scheme: "https", host: assets_host, port: 4000],
@@ -39,15 +41,7 @@ config :ret, RetWeb.Endpoint,
   # This config value is for local development only.
   secret_key_base: "txlMOtlaY5x3crvOCko4uV5PM29ul3zGo1oBGNO3cDXx+7GHLKqt0gR9qzgThxb5",
   allowed_origins: "*",
-  allow_crawlers: true,
-  watchers: [
-    node: [
-      "node_modules/brunch/bin/brunch",
-      "watch",
-      "--stdin",
-      cd: Path.expand("../assets", __DIR__)
-    ]
-  ]
+  allow_crawlers: true
 
 # ## SSL Support
 #
