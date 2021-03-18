@@ -27,8 +27,6 @@ config :ret, RetWeb.Endpoint,
   http: [
     port: 80,
     otp_app: :ret
-    keyfile: "#{System.get_env("PWD")}/priv/dev-ssl.key",
-    certfile: "#{System.get_env("PWD")}/priv/dev-ssl.cert"
   ],
   cors_proxy_url: [scheme: "http", host: cors_proxy_host, port: 80],
   assets_url: [scheme: "https", host: assets_host, port: 4000],
