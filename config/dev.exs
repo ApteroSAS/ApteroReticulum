@@ -105,7 +105,7 @@ config :cors_plug, origin: ["*"]
 config :ret,
   # This config value is for local development only.
   upload_encryption_key: "a8dedeb57adafa7821027d546f016efef5a501bd",
-  bot_access_key: ""
+  bot_access_key: "6f016efef5a501bd"
 
 config :ret, Ret.PageOriginWarmer,
   hubs_page_origin: "https://#{host}",
@@ -169,7 +169,7 @@ config :ret, Ret.OAuthToken, oauth_token_key: ""
 config :ret, Ret.Guardian,
   issuer: "ret",
   # This config value is for local development only.
-  secret_key: "47iqPEdWcfE7xRnyaxKDLt9OGEtkQG3SycHBEMOuT2qARmoESnhc76IgCUjaQIwX",
+  secret_key: System.get_env("JWT_SECRET"),
   ttl: {12, :weeks}
 
 config :web_push_encryption, :vapid_details,
