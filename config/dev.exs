@@ -116,15 +116,15 @@ config :ret, Ret.PageOriginWarmer,
 config :ret, Ret.HttpUtils, insecure_ssl: true
 
 config :ret, Ret.MediaResolver,
-  giphy_api_key: nil,
-  deviantart_client_id: nil,
-  deviantart_client_secret: nil,
-  imgur_mashape_api_key: nil,
-  imgur_client_id: nil,
-  google_poly_api_key: nil,
-  youtube_api_key: nil,
-  sketchfab_api_key: nil,
-  ytdl_host: nil,
+  giphy_api_key: System.get_env("GIPHY_API_KEY"),
+  deviantart_client_id: System.get_env("DEVIANTART_CLIENT_ID"),
+  deviantart_client_secret: System.get_env("DEVIANTART_CLIENT_SECRET"),
+  imgur_mashape_api_key: System.get_env("IMGUR_MASHAPE_API_KEY"),
+  imgur_client_id: System.get_env("IMGUR_CLIENT_ID"),
+  google_poly_api_key: System.get_env("GOOGLE_POLY_API_KEY"),
+  youtube_api_key: System.get_env("YOUTUBE_API_KEY"),
+  sketchfab_api_key: System.get_env("SKETCHFAB_API_KEY"),
+  ytdl_host: System.get_env("YTDL_HOST"),
   photomnemonic_endpoint: "https://uvnsm9nzhe.execute-api.us-west-1.amazonaws.com/public"
 
 config :ret, Ret.Speelycaptor, speelycaptor_endpoint: "https://1dhaogh2hd.execute-api.us-west-1.amazonaws.com/public"
