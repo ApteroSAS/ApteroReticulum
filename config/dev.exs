@@ -95,9 +95,9 @@ config :ret, Ret.SlackClient,
 config :ret, RetWeb.Api.V1.SlackController, token: ""
 
 config :ret, Ret.DiscordClient,
-  client_id: "",
-  client_secret: "",
-  bot_token: ""
+  client_id: System.get_env("DISCORD_CLIENT_ID"),
+  client_secret: System.get_env("DISCORD_CLIENT_SECRET"),
+  bot_token: System.get_env("DISCORD_BOT_TOKEN")
 
 # Allow any origin for API access in dev
 config :cors_plug, origin: ["*"]
