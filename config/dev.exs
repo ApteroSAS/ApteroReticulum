@@ -144,6 +144,7 @@ config :ret, RetWeb.Plugs.AddCSP,
   connect_src: "*",
   img_src: asset_hosts,
   media_src: asset_hosts,
+  frame_src: System.get_env("IFRAME_SCP"),
   manifest_src: asset_hosts
 
 #config :ret, Ret.Mailer, adapter: Bamboo.LocalAdapter
