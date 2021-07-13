@@ -1,9 +1,9 @@
 use Mix.Config
 
 host = System.get_env("MAIN_HOST")
-cors_proxy_host = "hubs-proxy.local"
-assets_host = "hubs-assets.local"
-link_host = "hubs-link.local"
+cors_proxy_host = System.get_env("MAIN_HOST")
+assets_host = System.get_env("MAIN_HOST")
+link_host = System.get_env("MAIN_HOST")
 
 # To run reticulum across a LAN for local testing, uncomment and change the line below to the LAN IP
 # host = cors_proxy_host = "192.168.1.27"
@@ -133,19 +133,16 @@ config :ret, Ret.Storage,
   storage_path: "storage/dev",
   ttl: 60 * 60 * 24
 
-asset_hosts = "*"
-
-websocket_hosts = "*"
-
 config :ret, RetWeb.Plugs.AddCSP,
-  script_src: asset_hosts,
-  font_src: asset_hosts,
-  style_src: asset_hosts,
+  script_src: "*",
+  font_src: "*",
+  style_src: "*",
   connect_src: "*",
-  img_src: asset_hosts,
-  media_src: asset_hosts,
+  img_src: "*",
+  media_src: "*",
   frame_src: System.get_env("IFRAME_SCP"),
-  manifest_src: asset_hosts
+  script_src_unsafe: System.get_env("SCRIPT_SRC_UNSAFE"),
+  manifest_src: "*"
 
 #config :ret, Ret.Mailer, adapter: Bamboo.LocalAdapter
 config :ret, Ret.Mailer,
