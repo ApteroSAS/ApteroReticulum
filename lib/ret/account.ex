@@ -42,19 +42,23 @@ defmodule Ret.Account do
 
   def find_or_create_account_for_email(email), do: account_for_email(email, true)
 
-  #APTERO TODO deprecaded
   def notify_external_user(%{"accountId" => accountId, "mail" => mail, "name" => name} = params) do
     #"email 2 " <> mail |> IO.inspect
     url = Application.get_env(:ret, __MODULE__)[:serviceUserURL]
     "notifyExternal" |> IO.inspect
     if (url) do
-      payload = params |> Poison.encode!()
-      IO.inspect(params)
+      json = %{
+        "accountId" => Integer.to_string(accountId),
+        "mail" => mail,
+        "name" => name
+      }
+      payload = json |> Poison.encode!()
+      IO.inspect(json)
       case HTTPoison.post(url <> "/update/user", payload, [{"Content-Type", "application/json"}]) do
         {:ok, %HTTPoison.Response{status_code: 200} = resp} ->
           "notifyExternal user updated" |> IO.inspect
         _ ->
-          "notifyExternal HTTP error" |> IO.inspect
+          "notifyExternal HTTP warn" |> IO.inspect
       end
     end
   end
@@ -63,15 +67,15 @@ defmodule Ret.Account do
   def notify_external_user_login(params) do
     #"email 2 " <> mail |> IO.inspect
     url = Application.get_env(:ret, __MODULE__)[:serviceUserURL]
-    "notifyExternal" |> IO.inspect
+    "notify_external_user_login" |> IO.inspect
     if (url) do
       payload = params |> Poison.encode!()
       IO.inspect(params)
       case HTTPoison.post(url <> "/update/user", payload, [{"Content-Type", "application/json"}]) do
         {:ok, %HTTPoison.Response{status_code: 200} = resp} ->
-          "notifyExternal user updated" |> IO.inspect
+          "notify_external_user_login user updated" |> IO.inspect
         _ ->
-          "notifyExternal HTTP error" |> IO.inspect
+          "notify_external_user_login HTTP warn" |> IO.inspect
       end
     end
   end
@@ -85,11 +89,12 @@ defmodule Ret.Account do
 
       try do
         if(login != nil and mail != nil and mail != true) do
+          IO.inspect(login.account_id)
           notify_external_user(%{"accountId" => login.account_id, "mail" => mail, "name" => "" })
         end
       rescue
         e ->
-          IO.inspect("notifyExternal error")
+          IO.inspect("account_for_login_identifier_hash error")
           IO.inspect(e)
       end
 

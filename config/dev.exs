@@ -104,8 +104,8 @@ config :cors_plug, origin: ["*"]
 
 config :ret,
   # This config value is for local development only.
-  upload_encryption_key: "a8dedeb57adafa7821027d546f016efef5a501bd",
-  bot_access_key: "6f016efef5a501bd"
+  upload_encryption_key: System.get_env("UPLOAD_ENCRYPTION_KEY"),
+  bot_access_key: System.get_env("BOT_ACCESS_KEY")
 
 config :ret, Ret.PageOriginWarmer,
   hubs_page_origin: "https://#{host}",
