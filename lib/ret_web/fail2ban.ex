@@ -1,7 +1,8 @@
 defmodule RetWeb.Plugs.Fail2Ban do
   use PlugAttack
 
-  if Mix.env() != :test do
+  #aptero deactivate fail to ban in prod
+  if Mix.env() == :fail2ban do
     rule "throttle and ban IP for 2 hours if we see more than 1 request per second", conn do
       forwarded_ip = conn.req_headers |> Ret.HttpUtils.get_forwarded_ip()
       remote_ip = forwarded_ip || conn.remote_ip

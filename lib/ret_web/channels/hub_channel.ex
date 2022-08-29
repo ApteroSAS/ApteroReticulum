@@ -407,8 +407,7 @@ defmodule RetWeb.HubChannel do
     hub = socket |> hub_for_socket
     account = Guardian.Phoenix.Socket.current_resource(socket)
 
-    #//TODO Aptero temporary hack disable security
-    #if account |> can?(update_hub(hub)) do
+    if account |> can?(update_hub(hub)) do
       name_changed = hub.name != payload["name"]
       description_changed = hub.description != payload["description"]
       member_permissions_changed = hub.member_permissions != payload |> Hub.member_permissions_from_attrs()
@@ -434,7 +433,7 @@ defmodule RetWeb.HubChannel do
       |> Repo.update!()
       |> Repo.preload(Hub.hub_preloads())
       |> broadcast_hub_refresh!(socket, stale_fields)
-    #end
+    end
 
     {:noreply, socket}
   end
