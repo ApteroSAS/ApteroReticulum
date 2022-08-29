@@ -71,7 +71,7 @@ defmodule RetWeb.Plugs.AddCSP do
         }:#{janus_port} #{default_janus_csp_rule}"
       end
 
-    "default-src 'none'; manifest-src #{custom_rules[:manifest_src]} 'self'; script-src #{custom_rules[:script_src]} #{
+    "default-src 'self'; manifest-src #{custom_rules[:manifest_src]} 'self'; script-src #{custom_rules[:script_src]} #{
       storage_url
     } #{assets_url} 'self' 'unsafe-eval' #{custom_rules[:script_src_unsafe]} #{
       storage_url
