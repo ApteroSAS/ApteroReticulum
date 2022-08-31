@@ -1,7 +1,7 @@
 defmodule RetWeb.Api.V1.HubController do
   use RetWeb, :controller
 
-  alias Ret.{Hub, Scene, Repo}
+  alias Ret.{Hub, Scene, Repo, OwnedFile}#Aptero
 
   import Canada, only: [can?: 2]
 
@@ -12,10 +12,60 @@ defmodule RetWeb.Api.V1.HubController do
   plug(RetWeb.Plugs.HeaderAuthorization when action in [:delete])
 
   def create(conn, %{"hub" => _hub_params} = params) do
-    Hub.create_new_room(params["hub"], false)
-    |> exec_create(conn)
+    #IO.inspect(params)
+    if _hub_params["hub_sid"] != nil do
+      exec_get(conn,params["hub"])#APTERO
+    else
+      Hub.create_new_room(params["hub"], false)
+      |> exec_create(conn)
+    end
   end
 
+  #APTERO API to get hub info
+  defp hub_to_entry(%Hub{} = hub) when hub != nil do
+    scene_or_scene_listing = hub.scene || hub.scene_listing
+
+    images =
+      if scene_or_scene_listing do
+        %{preview: %{url: scene_or_scene_listing.screenshot_owned_file |> OwnedFile.uri_for() |> URI.to_string()}}
+      else
+        %{preview: %{url: "#{RetWeb.Endpoint.url()}/data/app-thumbnail.png"}}
+      end
+
+    scene_id =
+      if scene_or_scene_listing do
+        Scene.to_sid(scene_or_scene_listing)
+      else
+        nil
+      end
+
+    %{
+      id: hub.hub_sid,
+      url: hub |> Hub.url_for(),
+      type: :room,
+      room_size: hub |> Hub.room_size_for(),
+      member_count: hub |> Hub.member_count_for(),
+      lobby_count: hub |> Hub.lobby_count_for(),
+      name: hub.name,
+      description: hub.description,
+      scene_id: scene_id,
+      user_data: hub.user_data,
+      images: images
+    }
+  end
+
+  defp exec_get(conn, %{"hub_sid" => _hub_sid} = params) do
+    #IO.inspect("exec_get")
+    #IO.inspect(params)
+    #IO.inspect(_hub_sid) Note this is impossible to display Oo
+    hub = Hub |> Repo.get_by(hub_sid: _hub_sid)
+          |> Repo.preload(scene: [:screenshot_owned_file], scene_listing: [:scene, :screenshot_owned_file])
+    #IO.inspect(hub)
+    entry = hub_to_entry(hub)
+    #IO.inspect(entry)
+    render(conn, "entry.json", %{entry: entry})
+  end
+  # END APTERO
   defp exec_create(hub_changeset, conn) do
     account = Guardian.Plug.current_resource(conn)
 

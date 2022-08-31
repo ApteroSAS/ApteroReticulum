@@ -2,6 +2,11 @@ defmodule RetWeb.Api.V1.HubView do
   use RetWeb, :view
   alias Ret.{Hub, Scene, SceneListing}
 
+  #APTERO
+  def render("entry.json", %{entry: entry}) do
+    entry
+  end
+
   def render("create.json", %{hub: hub}) do
     %{
       status: :ok,
