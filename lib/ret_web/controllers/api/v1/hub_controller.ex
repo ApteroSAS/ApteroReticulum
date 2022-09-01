@@ -6,7 +6,8 @@ defmodule RetWeb.Api.V1.HubController do
   import Canada, only: [can?: 2]
 
   # Limit to 1 TPS
-  plug(RetWeb.Plugs.RateLimit)
+  #Aptero remove rate limite since it will be used by a micro service
+  #plug(RetWeb.Plugs.RateLimit)
 
   # Only allow access to remove hubs with secret header
   plug(RetWeb.Plugs.HeaderAuthorization when action in [:delete])
