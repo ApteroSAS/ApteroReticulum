@@ -124,9 +124,9 @@ config :ret, Ret.MediaResolver,
   youtube_api_key: System.get_env("YOUTUBE_API_KEY"),
   sketchfab_api_key: System.get_env("SKETCHFAB_API_KEY"),
   ytdl_host: System.get_env("YTDL_HOST"),
-  photomnemonic_endpoint: "https://uvnsm9nzhe.execute-api.us-west-1.amazonaws.com/public"
+  photomnemonic_endpoint: System.get_env("PHOTOMNEMONIC_ENDPOINT")
 
-config :ret, Ret.Speelycaptor, speelycaptor_endpoint: "https://1dhaogh2hd.execute-api.us-west-1.amazonaws.com/public"
+config :ret, Ret.Speelycaptor, speelycaptor_endpoint: System.get_env("SPEELYCAPTOR_ENDPOINT")
 
 config :ret, Ret.Storage,
   storage_path: "storage/dev",
