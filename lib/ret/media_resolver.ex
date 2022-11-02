@@ -107,7 +107,6 @@ defmodule Ret.MediaResolver do
   end
 
   def resolve(%MediaResolverQuery{} = query, root_host) do
-    IO.inspect("MediaResolver resolve - default")
     #aptero bug fix
     #resolve_with_ytdl(query, root_host, query |> ytdl_format(root_host))
     fallback_to_screenshot_opengraph_or_nothing(query)
