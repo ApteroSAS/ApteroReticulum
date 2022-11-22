@@ -154,18 +154,18 @@ config :ret, RetWeb.Plugs.AddCSP,
 #config :ret, Ret.Mailer, adapter: Bamboo.LocalAdapter
 config :ret, Ret.Mailer,
   adapter: Bamboo.SMTPAdapter,
-  server: "mail.privateemail.com",
-  port: 465,
-  username: "admin@aptero.co", # or {:system, "SMTP_USERNAME"}
-  password: "%uPzEMs!)0T7U", # or {:system, "SMTP_PASSWORD"}
+  server: System.get_env("SMTP_HOST"),
+  port: System.get_env("SMTP_PORT"),
+  username: System.get_env("SMTP_USERNAME"),
+  password: System.get_env("SMTP_PASSWORD"),
   tls: :if_available, # can be `:always` or `:never`
-  allowed_tls_versions: [:"tlsv1", :"tlsv1.1", :"tlsv1.2"], # or {:system, "ALLOWED_TLS_VERSIONS"} w/ comma seprated values (e.g. "tlsv1.1,tlsv1.2")
+  allowed_tls_versions: ["tlsv1", "tlsv1.1", "tlsv1.2"], # or {:system, "ALLOWED_TLS_VERSIONS"} w/ comma seprated values (e.g. "tlsv1.1,tlsv1.2")
   ssl: true, # can be `true`
   retries: 3,
   no_mx_lookups: false, # can be `true`
   auth: :always # can be `:always`. If your smtp relay requires authentication set it to `:always`.
 
-config :ret, RetWeb.Email, from: "admin@aptero.co"
+config :ret, RetWeb.Email, from: System.get_env("SMTP_USERNAME")
 
 config :ret, Ret.PermsToken, perms_key: (System.get_env("PERMS_KEY") || "") |> String.replace("\\n", "\n")
 
@@ -199,7 +199,7 @@ config :ret, Ret.Habitat, ip: "127.0.0.1", http_port: 9631
 dialog_hostname = System.get_env("DIALOG_HOSTNAME") || "dev-janus.reticulum.io"
 dialog_port = String.to_integer(System.get_env("DIALOG_PORT") || "443")
 
-config :ret, Ret.JanusLoadStatus, default_janus_host: dev_janus_host, janus_port: 443
+config :ret, Ret.JanusLoadStatus, default_janus_host: dialog_hostname, janus_port: dialog_port
 
 config :ret, Ret.RoomAssigner, balancer_weights: [{600, 1}, {300, 50}, {0, 500}]
 
