@@ -28,6 +28,7 @@ defmodule Ret.MediaSearch do
   @scene_page_size 23
   @max_face_count 60000
   @max_collection_face_count 200_000
+
   # see sketchfab bug about max_filesizes params broken
   # @max_file_size_bytes 20 * 1024 * 1024 
   # @max_collection_file_size_bytes 100 * 1024 * 1024
@@ -276,7 +277,8 @@ defmodule Ret.MediaSearch do
           offset: cursor || 0
         )
 
-      res = "https://api.twitch.tv/helix/streams?#{query}" |> retry_get_until_success([{"Client-ID", client_id}])
+      res =
+        "https://api.twitch.tv/helix/streams?#{query}" |> retry_get_until_success(headers: [{"Client-ID", client_id}])
 
       case res do
         :error ->
@@ -312,9 +314,9 @@ defmodule Ret.MediaSearch do
       res =
         retry_get_until_success(
           "https://api.sketchfab.com/v3/search?#{query}",
-          [{"Authorization", "Token #{api_key}"}],
-          15_000,
-          15_000
+          headers: [{"Authorization", "Token #{api_key}"}],
+          cap_ms: 15_000,
+          expiry_ms: 15_000
         )
 
       case res do
@@ -347,7 +349,7 @@ defmodule Ret.MediaSearch do
 
       res =
         "https://westus.api.cognitive.microsoft.com/bing/v7.0/videos/trending?#{query}"
-        |> retry_get_until_success([{"Ocp-Apim-Subscription-Key", api_key}])
+        |> retry_get_until_success(headers: [{"Ocp-Apim-Subscription-Key", api_key}])
 
       case res do
         :error ->
@@ -394,7 +396,7 @@ defmodule Ret.MediaSearch do
 
       res =
         "https://westus.api.cognitive.microsoft.com/bing/v7.0/#{type}/search?#{query}"
-        |> retry_get_until_success([{"Ocp-Apim-Subscription-Key", api_key}])
+        |> retry_get_until_success(headers: [{"Ocp-Apim-Subscription-Key", api_key}])
 
       case res do
         :error ->

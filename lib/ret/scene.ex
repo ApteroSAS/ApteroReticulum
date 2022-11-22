@@ -11,23 +11,13 @@ defmodule Ret.Scene do
   import Ecto.Changeset
   import Ecto.Query
 
-  alias Ret.{Repo, Scene, SceneListing, Project, Storage}
+  alias Ret.{Repo, Scene, SceneListing, Project, Storage, OwnedFile, GLTFUtils}
   alias Ret.Scene.{SceneSlug}
+
+  @type t :: %__MODULE__{}
 
   @schema_prefix "ret0"
   @primary_key {:scene_id, :id, autogenerate: true}
-
-  @scene_preloads [
-    :parent_scene,
-    :parent_scene_listing,
-    :account,
-    :project,
-    :model_owned_file,
-    :screenshot_owned_file,
-    :scene_owned_file
-  ]
-  def scene_preloads, do: @scene_preloads
-
   schema "scenes" do
     field(:scene_sid, :string)
     field(:slug, SceneSlug.Type)
@@ -54,6 +44,17 @@ defmodule Ret.Scene do
 
     timestamps()
   end
+
+  def scene_preloads,
+    do: [
+      :parent_scene,
+      :parent_scene_listing,
+      :account,
+      :project,
+      :model_owned_file,
+      :screenshot_owned_file,
+      :scene_owned_file
+    ]
 
   def scene_or_scene_listing_by_sid(sid) do
     Scene |> Repo.get_by(scene_sid: sid) ||
@@ -175,6 +176,52 @@ defmodule Ret.Scene do
       |> Repo.insert_or_update()
 
     new_scene
+  end
+
+  @rewrite_chunk_size 50
+  def rewrite_domain_for_all(old_domain_url, new_domain_url) do
+    scene_stream =
+      from(Scene, select: [:scene_id, :scene_owned_file_id, :model_owned_file_id, :account_id])
+      |> Repo.stream()
+      |> Stream.chunk_every(@rewrite_chunk_size)
+      |> Stream.flat_map(fn chunk -> Repo.preload(chunk, [:scene_owned_file, :model_owned_file, :account]) end)
+
+    Repo.transaction(fn ->
+      Enum.each(scene_stream, fn scene ->
+        %Scene{
+          scene_owned_file: old_scene_owned_file,
+          model_owned_file: old_model_owned_file,
+          account: account
+        } = scene
+
+        new_scene_owned_file =
+          Storage.create_new_owned_file_with_replaced_string(
+            old_scene_owned_file,
+            account,
+            old_domain_url,
+            new_domain_url
+          )
+
+        {:ok, new_model_owned_file} =
+          Storage.duplicate_and_transform(old_model_owned_file, account, fn glb_stream, _total_bytes ->
+            GLTFUtils.replace_in_glb(glb_stream, old_domain_url, new_domain_url)
+          end)
+
+        scene
+        |> change()
+        |> put_change(:scene_owned_file_id, new_scene_owned_file.owned_file_id)
+        |> put_change(:model_owned_file_id, new_model_owned_file.owned_file_id)
+        |> Repo.update!()
+
+        for old_owned_file <- [old_scene_owned_file, old_model_owned_file] do
+          OwnedFile.set_inactive(old_owned_file)
+          Storage.rm_files_for_owned_file(old_owned_file)
+          Repo.delete(old_owned_file)
+        end
+      end)
+
+      :ok
+    end)
   end
 
   def changeset(

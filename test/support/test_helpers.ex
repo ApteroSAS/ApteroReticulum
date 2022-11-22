@@ -54,12 +54,20 @@ defmodule Ret.TestHelpers do
     {:ok, account: create_account("test"), account2: create_account("test2")}
   end
 
-  def create_admin_account(_) do
-    {:ok, admin_account: create_account("test", true)}
+  def create_admin_account(prefix) do
+    {:ok, admin_account: create_account(prefix, true)}
   end
 
   def create_owned_file(%{account: account}) do
     {:ok, owned_file: generate_temp_owned_file(account)}
+  end
+
+  @spec create_owned_file(Account.t(), String.t()) :: OwnedFile.t()
+  def create_owned_file(%Account{} = account, file_contents) when is_binary(file_contents) do
+    file_path = generate_temp_file(file_contents)
+    {:ok, uuid} = Storage.store(%Plug.Upload{path: file_path}, "text/plain", "secret")
+    {:ok, owned_file} = Storage.promote(uuid, "secret", nil, account)
+    owned_file
   end
 
   def create_scene(%Account{} = account) do
@@ -223,5 +231,10 @@ defmodule Ret.TestHelpers do
     |> Ret.Repo.preload(created_by_account: [])
     |> Ret.Hub.changeset_for_creator_assignment(account, hub.creator_assignment_token)
     |> Ret.Repo.update!()
+  end
+
+  def merge_module_config(app, key, configs) do
+    current_config = Application.get_env(app, key, %{})
+    Application.put_env(app, key, Map.merge(current_config, configs))
   end
 end

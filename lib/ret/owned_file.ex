@@ -4,9 +4,10 @@ defmodule Ret.OwnedFile do
   import Ecto.Changeset
   alias Ret.{Repo, OwnedFile, Account}
 
+  @type t :: %__MODULE__{}
+
   @schema_prefix "ret0"
   @primary_key {:owned_file_id, :id, autogenerate: true}
-
   schema "owned_files" do
     field(:owned_file_uuid, :string)
     field(:key, :string)
@@ -45,6 +46,10 @@ defmodule Ret.OwnedFile do
 
   def set_inactive(owned_file_uuid, account_id) do
     get_by_uuid_and_account(owned_file_uuid, account_id) |> set_state(:inactive)
+  end
+
+  def set_inactive(%OwnedFile{} = owned_file) do
+    set_state(owned_file, :inactive)
   end
 
   def get_by_uuid_and_account(owned_file_uuid, account_id) do

@@ -75,7 +75,6 @@ defmodule Ret.Application do
       worker(Ret.RoomAssignerMonitor, []),
       # Storage for rate limiting
       worker(PlugAttack.Storage.Ets, [RetWeb.RateLimit.Storage, [clean_period: 60_000]], id: :rate_limit),
-      worker(PlugAttack.Storage.Ets, [RetWeb.Fail2Ban.Storage, [clean_period: 60_000]], id: :fail2ban),
       # Media resolution cache
       worker(
         Cachex,
@@ -234,6 +233,19 @@ defmodule Ret.Application do
           ]
         ],
         id: :coturn_secret
+      ),
+
+      # What's new cache
+      worker(
+        Cachex,
+        [
+          :whats_new,
+          [
+            expiration: expiration(default: :timer.minutes(1)),
+            fallback: fallback(default: &RetWeb.Api.V1.WhatsNewController.fetch_pull_requests/1)
+          ]
+        ],
+        id: :whats_new_cache
       ),
       supervisor(TheEnd.Of.Phoenix, [[timeout: 10_000, endpoint: RetWeb.Endpoint]])
     ]

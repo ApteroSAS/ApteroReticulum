@@ -14,7 +14,7 @@ defmodule Ret.MediaResolver do
 
   require Logger
 
-  alias Ret.{CachedFile, MediaResolverQuery, Statix}
+  alias Ret.{CachedFile, MediaResolverQuery, Statix, HttpUtils}
 
   @ytdl_valid_status_codes [200, 500]
 
@@ -35,20 +35,23 @@ defmodule Ret.MediaResolver do
     root_host = get_root_host(uri.host)
     query = Map.put(query, :url, uri)
 
-    # TODO: We could end up running fallback_to_screenshot_opengraph_or_nothing
+    # TODO: We could end up running maybe_fallback_to_screenshot_opengraph_or_nothing
     #       twice in a row. These resolve functions can be simplified so that we can
     #       more easily track individual failures and only fallback when necessary.
     #       Also make sure they have a uniform response shape for indicating an
     #       error.
     case resolve(query, root_host) do
+      :forbidden ->
+        :forbidden
+
       :error ->
-        fallback_to_screenshot_opengraph_or_nothing(query)
+        maybe_fallback_to_screenshot_opengraph_or_nothing(query)
 
       {:error, _reason} ->
-        fallback_to_screenshot_opengraph_or_nothing(query)
+        maybe_fallback_to_screenshot_opengraph_or_nothing(query)
 
       {:commit, nil} ->
-        fallback_to_screenshot_opengraph_or_nothing(query)
+        maybe_fallback_to_screenshot_opengraph_or_nothing(query)
 
       commit ->
         commit
@@ -309,17 +312,38 @@ defmodule Ret.MediaResolver do
   end
 
   defp resolve_non_video(%MediaResolverQuery{} = query, _root_host) do
-    fallback_to_screenshot_opengraph_or_nothing(query)
+    maybe_fallback_to_screenshot_opengraph_or_nothing(query)
   end
 
-  # TODO: Refactor this function
+  defp maybe_fallback_to_screenshot_opengraph_or_nothing(
+         %MediaResolverQuery{url: %URI{host: host}, version: _version} = query
+       ) do
+    # We fell back because we did not match any of the known hosts above, or ytdl resolution failed. So, we need to
+    # validate the IP for this host before making further requests.
+    resolved_ip = HttpUtils.resolve_ip(host)
+
+    case resolved_ip do
+      nil ->
+        :error
+
+      resolved_ip ->
+        if HttpUtils.internal_ip?(resolved_ip) do
+          :forbidden
+        else
+          fallback_to_screenshot_opengraph_or_nothing(query)
+        end
+    end
+  end
+
   defp fallback_to_screenshot_opengraph_or_nothing(%MediaResolverQuery{url: %URI{host: host} = uri, version: version}) do
     photomnemonic_endpoint = module_config(:photomnemonic_endpoint)
 
     # Crawl og tags for hubs rooms + scenes
     is_local_url = host === RetWeb.Endpoint.host()
 
-    case uri |> URI.to_string() |> retry_head_then_get_until_success([{"Range", "bytes=0-32768"}]) do
+    case uri
+         |> URI.to_string()
+         |> retry_head_then_get_until_success(headers: [{"Range", "bytes=0-32768"}], append_browser_user_agent: true) do
       :error ->
         :error
 
@@ -374,7 +398,9 @@ defmodule Ret.MediaResolver do
   end
 
   defp opengraph_result_for_uri(uri) do
-    case uri |> URI.to_string() |> retry_get_until_success([{"Range", "bytes=0-32768"}]) do
+    case uri
+         |> URI.to_string()
+         |> retry_get_until_success(headers: [{"Range", "bytes=0-32768"}], append_browser_user_agent: true) do
       :error ->
         :error
 
@@ -416,7 +442,7 @@ defmodule Ret.MediaResolver do
 
   defp get_sketchfab_model_zip_url(%{model_id: model_id, api_key: api_key}) do
     case "https://api.sketchfab.com/v3/models/#{model_id}/download"
-         |> retry_get_until_success([{"Authorization", "Token #{api_key}"}], 15_000, 15_000) do
+         |> retry_get_until_success(headers: [{"Authorization", "Token #{api_key}"}], cap_ms: 15_000, expiry_ms: 15_000) do
       :error ->
         {:error, "Failed to get sketchfab metadata"}
 
@@ -495,7 +521,7 @@ defmodule Ret.MediaResolver do
     with headers when is_list(headers) <- get_imgur_headers() do
       image_data =
         imgur_api_url
-        |> retry_get_until_success(headers)
+        |> retry_get_until_success(headers: headers)
         |> Map.get(:body)
         |> Poison.decode!()
         |> Kernel.get_in(["data", "images"])

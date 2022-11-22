@@ -49,8 +49,8 @@ defmodule Ret.Mixfile do
       {:phoenix_html, "~> 2.13"},
       {:phoenix_live_reload, "~> 1.2", only: :dev},
       {:gettext, "~> 0.17"},
-      {:cowboy, "~> 2.6.3"},
-      {:plug_cowboy, "~> 2.0"},
+      {:cowboy, "~> 2.9"},
+      {:plug_cowboy, "~> 2.1"},
       {:distillery, "~> 2.0"},
       {:peerage, "~> 1.0"},
       {:httpoison, "~> 1.5"},
@@ -60,6 +60,7 @@ defmodule Ret.Mixfile do
       {:statix, "~> 1.2"},
       {:quantum, "~> 2.2.7"},
       {:credo, "~> 1.1", only: [:dev, :test], runtime: false},
+      {:mox, "~> 1.0.1", only: [:dev, :test]},
       {:plug_attack, "~> 0.4"},
       {:ecto_enum, "~> 1.3"},
       {:the_end, git: "https://github.com/mozillareality/the_end.git", branch: "bug/phoenix-14"},
@@ -90,7 +91,8 @@ defmodule Ret.Mixfile do
       {:ex_rated, "~> 1.3.3"},
       {:mix_test_watch, "~> 1.0", only: :dev, runtime: false},
       {:ex_json_schema, "~> 0.7.3"},
-      {:observer_cli, "~> 1.5"}
+      {:observer_cli, "~> 1.5"},
+      {:stream_data, "~> 0.5", github: "whatyouhide/stream_data", ref: "c7ef8ef", only: [:dev, :test]}
     ]
   end
 

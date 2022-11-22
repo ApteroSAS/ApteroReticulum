@@ -10,7 +10,6 @@ link_host = System.get_env("MAIN_HOST")
 
 janus_host = System.get_env("JANUS_HOST")
 janus_port = System.get_env("JANUS_PORT")
-#janus_host = "dev-janus.reticulum.io"
 
 config :ret, Ret.Account,
   serviceUserURL: System.get_env("USER_SERVICE_URL")
@@ -99,6 +98,10 @@ config :ret, Ret.DiscordClient,
   client_secret: System.get_env("DISCORD_CLIENT_SECRET"),
   bot_token: System.get_env("DISCORD_BOT_TOKEN")
 
+config :ret, RetWeb.Api.V1.WhatsNewController, token: ""
+
+config :ret, RetWeb.Plugs.DashboardHeaderAuthorization, dashboard_access_key: ""
+
 # Allow any origin for API access in dev
 config :cors_plug, origin: ["*"]
 
@@ -107,10 +110,14 @@ config :ret,
   upload_encryption_key: System.get_env("UPLOAD_ENCRYPTION_KEY"),
   bot_access_key: System.get_env("BOT_ACCESS_KEY")
 
+hubs_admin_internal_hostname = System.get_env("HUBS_ADMIN_INTERNAL_HOSTNAME") || host
+hubs_client_internal_hostname = System.get_env("HUBS_CLIENT_INTERNAL_HOSTNAME") || host
+spoke_internal_hostname = System.get_env("SPOKE_INTERNAL_HOSTNAME") || host
+
 config :ret, Ret.PageOriginWarmer,
-  hubs_page_origin: "https://#{host}",
-  admin_page_origin: "https://#{host}",
-  spoke_page_origin: "https://#{host}",
+  hubs_page_origin: "https://#{host}:8080",
+  admin_page_origin: "https://#{host}:8989",
+  spoke_page_origin: "https://#{host}:9090",
   insecure_ssl: true
 
 config :ret, Ret.HttpUtils, insecure_ssl: true
@@ -129,6 +136,7 @@ config :ret, Ret.MediaResolver,
 config :ret, Ret.Speelycaptor, speelycaptor_endpoint: System.get_env("SPEELYCAPTOR_ENDPOINT")
 
 config :ret, Ret.Storage,
+  host: "https://#{host}:4000",
   storage_path: "storage/dev",
   ttl: 60 * 60 * 24
 
@@ -188,12 +196,15 @@ config :sentry,
 
 config :ret, Ret.Habitat, ip: "127.0.0.1", http_port: 9631
 
-config :ret, Ret.JanusLoadStatus, default_janus_host: janus_host, janus_port: janus_port
+dialog_hostname = System.get_env("DIALOG_HOSTNAME") || "dev-janus.reticulum.io"
+dialog_port = String.to_integer(System.get_env("DIALOG_PORT") || "443")
+
+config :ret, Ret.JanusLoadStatus, default_janus_host: dev_janus_host, janus_port: 443
 
 config :ret, Ret.RoomAssigner, balancer_weights: [{600, 1}, {300, 50}, {0, 500}]
 
 config :ret, RetWeb.PageController,
-  skip_cache: false,
+  skip_cache: true,
   assets_path: "/ret/storage/assets",
   docs_path: "/ret/storage/docs"
 
