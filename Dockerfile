@@ -1,31 +1,43 @@
-FROM elixir:1.10.2
+FROM alpine/openssl as certr
+WORKDIR certs
+RUN openssl req -x509 -newkey rsa:2048 -sha256 -days 36500 -nodes -keyout key.pem -out cert.pem -subj '/CN=ret' && cp cert.pem cacert.pem
 
-#install node
-RUN apt-get update
-RUN apt remove cmdtest
-RUN curl -sL https://deb.nodesource.com/setup_16.x | bash
-RUN curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add
-RUN echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
-RUN apt-get install -y nodejs nodejs-legacy
-RUN node --version
-
-#install inotify
-RUN apt-get update -qq && apt-get install -y inotify-tools
-
-#install yarn
-RUN curl -so- -L https://yarnpkg.com/install.sh | bash
-RUN $HOME/.yarn/bin/yarn -version
-
-RUN mkdir /ret
-COPY . /ret
-
-WORKDIR	/ret
-#COPY mix.exs /ret/mix.exs
-#COPY mix.lock /ret/mix.lock
+FROM elixir:1.8-alpine as builder
+RUN apk add --no-cache nodejs yarn git build-base
+COPY . .
 RUN mix local.hex --force
 RUN mix local.rebar --force
-#COPY . /ret
-
 RUN mix deps.get
-RUN cd assets && $HOME/.yarn/bin/yarn
-RUN mix compile.phoenix
+RUN mix deps.clean mime --build
+RUN rm -rf _build
+#Compile is very long around 200s
+RUN mix compile
+RUN MIX_ENV=prod mix distillery.release
+
+FROM alpine
+RUN mkdir -p /storage && chmod 777 /storage
+RUN apk update && apk add --no-cache bash openssl-dev openssl jq libstdc++ coreutils
+WORKDIR ret
+COPY --from=certr /certs .
+COPY --from=builder /_build/turkey/rel/ret/ .
+COPY scripts/docker/run.sh /run.sh
+CMD exec /ret/bin/ret foreground
+
+FROM elixir:1.8-alpine
+RUN apk add --no-cache nodejs yarn git build-base
+RUN apk update && apk add --no-cache bash openssl-dev openssl jq libstdc++ coreutils
+RUN mkdir -p /storage && chmod 777 /storage
+COPY . .
+RUN mix local.hex --force
+RUN mix local.rebar --force
+RUN mix deps.get
+RUN mix deps.clean mime --build
+RUN rm -rf _build
+#Compile is very long around 200s
+RUN mix compile
+COPY --from=certr /certs ./ret/
+RUN MIX_ENV=prod mix distillery.release
+RUN cp -a _build/prod/rel/ret/ .
+WORKDIR ret
+CMD exec /ret/bin/ret foreground
+#CMD mix ecto.create; mix ecto.migrations; mix phx.server
