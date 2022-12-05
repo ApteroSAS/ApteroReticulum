@@ -21,7 +21,6 @@ COPY ./.formatter.exs ./.formatter.exs
 COPY ./.tool-versions ./.tool-versions
 COPY ./mix.exs ./mix.exs
 COPY ./mix.lock ./mix.lock
-COPY ./lib ./lib
 COPY ./rel ./rel
 COPY ./version.json ./version.json
 COPY docker/config.toml .
@@ -30,9 +29,10 @@ RUN mix local.rebar --force
 RUN mix deps.get
 RUN mix deps.clean mime --build
 RUN rm -rf _build
+COPY ./lib ./lib
 #Compile is very long around 200s
 RUN mix compile
-RUN MIX_ENV=prod mix distillery.release
+#RUN MIX_ENV=prod mix distillery.release
 #CMD exec /ret/bin/ret foreground
 CMD mix ecto.create; mix ecto.migrations; mix phx.server
 #DEBUG

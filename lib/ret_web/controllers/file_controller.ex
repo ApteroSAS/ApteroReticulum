@@ -88,15 +88,16 @@ defmodule RetWeb.FileController do
     cf_worker = conn.req_headers |> Ret.HttpUtils.get_http_header("cf-worker")
     cf_worker_matches = !!cf_worker and storage_host |> String.ends_with?(cf_worker)
 
-    if is_storage_host or cf_worker_matches do
+    # if is_storage_host or cf_worker_matches do
       {uuid, token}
       |> resolve_fetch_args
       |> fetch_and_render(conn, type)
-    else
+      #else
       # We want to avoid serving files from the primary domain, so we forbid requests
       # that aren't from the storage host or the Cloudflare worker.
-      conn |> send_resp(403, "")
-    end
+      #  IO.inspect("No token provided")
+      #  conn |> send_resp(403, "")
+      #end
   end
 
   # Given a tuple of a UUID and a (optional) user specified token,

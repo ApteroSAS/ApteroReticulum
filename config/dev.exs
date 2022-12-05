@@ -28,9 +28,9 @@ config :ret, RetWeb.Endpoint,
     otp_app: :ret
   ],
   cors_proxy_url: [scheme: "http", host: cors_proxy_host, port: 80],
-  assets_url: [scheme: "https", host: assets_host, port: 4000],
-  link_url: [scheme: "https", host: link_host, port: 4000],
-  imgproxy_url: [scheme: "http", host: host, port: 5000],
+  assets_url: [scheme: "https", host: assets_host, port: 443],
+  link_url: [scheme: "https", host: link_host, port: 443],
+  imgproxy_url: [scheme: "http", host: host, port: 443],
   video360URL: System.get_env("VIDEO360_SERVICE_URL"),
   debug_errors: true,
   code_reloader: false,
@@ -115,9 +115,9 @@ hubs_client_internal_hostname = System.get_env("HUBS_CLIENT_INTERNAL_HOSTNAME") 
 spoke_internal_hostname = System.get_env("SPOKE_INTERNAL_HOSTNAME") || host
 
 config :ret, Ret.PageOriginWarmer,
-  hubs_page_origin: "https://#{host}:8080",
-  admin_page_origin: "https://#{host}:8989",
-  spoke_page_origin: "https://#{host}:9090",
+  hubs_page_origin: "https://#{host}",
+  admin_page_origin: "https://#{host}",
+  spoke_page_origin: "https://#{host}",
   insecure_ssl: true
 
 config :ret, Ret.HttpUtils, insecure_ssl: true
@@ -136,7 +136,7 @@ config :ret, Ret.MediaResolver,
 config :ret, Ret.Speelycaptor, speelycaptor_endpoint: System.get_env("SPEELYCAPTOR_ENDPOINT")
 
 config :ret, Ret.Storage,
-  host: "https://#{host}:4000",
+  host: "https://#{host}",
   storage_path: "storage/dev",
   ttl: 60 * 60 * 24
 
