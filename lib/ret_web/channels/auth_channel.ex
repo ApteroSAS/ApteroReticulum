@@ -19,6 +19,7 @@ defmodule RetWeb.AuthChannel do
     {:ok, %{session_id: socket.assigns.session_id}, socket}
   end
 
+  #APTERO
   def handle_in("auth_token_request", %{"email" => email, "origin" => origin, "authtoken" => authtoken}, socket) do
     if !Map.get(socket.assigns, :used) do
       socket = socket
@@ -56,11 +57,9 @@ defmodule RetWeb.AuthChannel do
 
   def handle_in("auth_request", %{"email" => email, "origin" => origin}, socket) do
     if !Map.get(socket.assigns, :used) do
-      socket = socket
-               |> assign(:used, true)
+      socket = socket |> assign(:used, true)
 
-      account = email
-                |> Account.account_for_email()
+      account = email |> Account.account_for_email()
       account_disabled = account && account.state == :disabled
 
       if !account_disabled && (can?(nil, create_account(nil)) || !!account) do
@@ -94,8 +93,7 @@ defmodule RetWeb.AuthChannel do
         Statix.increment("ret.emails.auth.attempted", 1)
 
         if RetWeb.Email.enabled?() do
-          RetWeb.Email.auth_email(email, signin_args)
-          |> Ret.Mailer.deliver_now()
+          RetWeb.Email.auth_email(email, signin_args) |> Ret.Mailer.deliver_now()
         end
 
         Statix.increment("ret.emails.auth.sent", 1)

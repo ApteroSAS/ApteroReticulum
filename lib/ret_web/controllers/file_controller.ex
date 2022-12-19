@@ -88,6 +88,7 @@ defmodule RetWeb.FileController do
     cf_worker = conn.req_headers |> Ret.HttpUtils.get_http_header("cf-worker")
     cf_worker_matches = !!cf_worker and storage_host |> String.ends_with?(cf_worker)
 
+    #APTERO
     # if is_storage_host or cf_worker_matches do
       {uuid, token}
       |> resolve_fetch_args

@@ -12,8 +12,7 @@ defmodule RetWeb.Api.V1.MediaSearchController do
       }
       |> Ret.MediaSearch.search()
 
-    conn
-    |> render("index.json", results: results)
+    conn |> render("index.json", results: results)
   end
 
   def index(conn, %{"source" => "sketchfab", "user" => user}) do
@@ -33,8 +32,7 @@ defmodule RetWeb.Api.V1.MediaSearchController do
       }
       |> Ret.MediaSearch.search()
 
-    conn
-    |> render("index.json", results: results)
+    conn |> render("index.json", results: results)
   end
 
   def index(conn, %{"source" => "avatar_listings"} = params) do
@@ -48,14 +46,12 @@ defmodule RetWeb.Api.V1.MediaSearchController do
       }
       |> Ret.MediaSearch.search()
 
-    conn
-    |> render("index.json", results: results)
+    conn |> render("index.json", results: results)
   end
 
   def index(conn, %{"source" => source, "user" => user} = params)
-      when source in ["scenes", "avatars", "favorites", "assets", "objects"] do
-    account = conn
-              |> Guardian.Plug.current_resource()
+      when source in ["scenes", "avatars", "favorites", "assets", "objects"] do #APTERO
+    account = conn |> Guardian.Plug.current_resource()
 
     if account && account.account_id == String.to_integer(user) do
       {:commit, results} =
@@ -63,23 +59,20 @@ defmodule RetWeb.Api.V1.MediaSearchController do
           source: source,
           cursor: params["cursor"] || "1",
           user: account.account_id,
-          filter: params["filter"],
+          filter: params["filter"],#APTERO
           type: params["type"],
           q: params["q"]
         }
         |> Ret.MediaSearch.search()
 
-      conn
-      |> render("index.json", results: results)
+      conn |> render("index.json", results: results)
     else
-      conn
-      |> send_resp(401, "You can only search #{source} by user for your own account.")
+      conn |> send_resp(401, "You can only search #{source} by user for your own account.")
     end
   end
 
   def index(conn, %{"source" => source}) when source in ["favorites"] do
-    conn
-    |> send_resp(401, "Missing account id for favorites search.")
+    conn |> send_resp(401, "Missing account id for favorites search.")
   end
 
   def index(conn, %{"source" => source} = params)
@@ -102,19 +95,17 @@ defmodule RetWeb.Api.V1.MediaSearchController do
 
     case Cachex.fetch(cache_for_query(query), query) do
       {_status, nil} ->
-        conn
-        |> send_resp(404, "")
+        conn |> send_resp(404, "")
 
       {_status, %Ret.MediaSearchResult{} = results} ->
-        conn
-        |> render("index.json", results: results)
+        conn |> render("index.json", results: results)
 
       _ ->
-        conn
-        |> send_resp(404, "")
+        conn |> send_resp(404, "")
     end
   end
 
+  #APTERO
   def index(conn, %{"source" => source, "user" => user, "filter" => filter} = params)
       when source in ["videos360", "videos"] and filter in ["my-videos-live", "my-videos-360-live"] do
     #Just forward the data
@@ -161,9 +152,8 @@ defmodule RetWeb.Api.V1.MediaSearchController do
   defp cache_for_query(_query), do: :media_search_results
 
   def index(conn) do
-    conn
-    |> send_resp(422, "")
+    conn |> send_resp(422, "")
   end
-
+  #APTERO
   defp module_config(key), do: Application.get_env(:ret, RetWeb.Endpoint)[key]
 end
