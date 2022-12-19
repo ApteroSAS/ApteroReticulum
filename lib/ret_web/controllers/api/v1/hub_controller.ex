@@ -10,7 +10,7 @@ defmodule RetWeb.Api.V1.HubController do
   #plug(RetWeb.Plugs.RateLimit)
 
   # Only allow access to remove hubs with secret header
-  plug(RetWeb.Plugs.HeaderAuthorization when action in [:delete])
+  plug RetWeb.Plugs.HeaderAuthorization when action in [:delete]
 
   def create(conn, %{"hub" => _hub_params} = params) do
     #IO.inspect(params)
@@ -129,7 +129,8 @@ defmodule RetWeb.Api.V1.HubController do
 
   defp maybe_add_new_scene(changeset, nil), do: changeset
 
-  defp maybe_add_new_scene(changeset, scene), do: changeset |> Hub.add_new_scene_to_changeset(scene)
+  defp maybe_add_new_scene(changeset, scene),
+    do: changeset |> Hub.add_new_scene_to_changeset(scene)
 
   def delete(conn, %{"id" => hub_sid}) do
     Hub

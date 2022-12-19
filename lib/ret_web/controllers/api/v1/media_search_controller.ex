@@ -17,10 +17,10 @@ defmodule RetWeb.Api.V1.MediaSearchController do
   end
 
   def index(conn, %{"source" => "sketchfab", "user" => user}) do
-    {:commit, results} = %Ret.MediaSearchQuery{source: "sketchfab", user: user}
-                         |> Ret.MediaSearch.search()
-    conn
-    |> render("index.json", results: results)
+    {:commit, results} =
+      %Ret.MediaSearchQuery{source: "sketchfab", user: user} |> Ret.MediaSearch.search()
+
+    conn |> render("index.json", results: results)
   end
 
   def index(conn, %{"source" => "scene_listings"} = params) do
@@ -83,7 +83,14 @@ defmodule RetWeb.Api.V1.MediaSearchController do
   end
 
   def index(conn, %{"source" => source} = params)
-      when source in ["sketchfab", "tenor", "youtube_videos", "bing_videos", "bing_images", "twitch"] do
+      when source in [
+             "sketchfab",
+             "tenor",
+             "youtube_videos",
+             "bing_videos",
+             "bing_images",
+             "twitch"
+           ] do
     query = %Ret.MediaSearchQuery{
       source: source,
       cursor: params["cursor"],

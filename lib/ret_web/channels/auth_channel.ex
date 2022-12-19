@@ -3,9 +3,10 @@ defmodule RetWeb.AuthChannel do
 
   use RetWeb, :channel
   import Canada, only: [can?: 2]
-  alias Ret.{Statix, OAuthToken, LoginToken, Account, Crypto}
 
-  intercept(["auth_credentials"])
+  alias Ret.{Statix, LoginToken, Account, Crypto}
+
+  intercept ["auth_credentials"]
 
   def join("auth:" <> _topic_key, _payload, socket) do
     # Expire channel in 5 minutes
@@ -64,12 +65,14 @@ defmodule RetWeb.AuthChannel do
 
       if !account_disabled && (can?(nil, create_account(nil)) || !!account) do
         # Create token + send email
-        %LoginToken{token: token, payload_key: payload_key} = LoginToken.new_login_token_for_email(email)
+        %LoginToken{token: token, payload_key: payload_key} =
+          LoginToken.new_login_token_for_email(email)
 
-        encrypted_payload = %{"email" => email}
-                            |> Poison.encode!()
-                            |> Crypto.encrypt(payload_key)
-                            |> :base64.encode()
+        encrypted_payload =
+          %{"email" => email}
+          |> Poison.encode!()
+          |> Crypto.encrypt(payload_key)
+          |> :base64.encode()
 
         signin_args = %{
           auth_topic: socket.topic,
@@ -112,10 +115,8 @@ defmodule RetWeb.AuthChannel do
 
     case LoginToken.lookup_by_token(token) do
       %LoginToken{identifier_hash: identifier_hash, payload_key: payload_key} ->
-        decrypted_payload = auth_payload
-                            |> :base64.decode()
-                            |> Ret.Crypto.decrypt(payload_key)
-                            |> Poison.decode!()
+        decrypted_payload =
+          auth_payload |> :base64.decode() |> Ret.Crypto.decrypt(payload_key) |> Poison.decode!()
 
         broadcast_credentials_and_payload(identifier_hash, decrypted_payload, socket)
 
@@ -151,10 +152,10 @@ defmodule RetWeb.AuthChannel do
   defp broadcast_credentials_and_payload(nil, _payload, _socket), do: nil
 
   defp broadcast_credentials_and_payload(identifier_hash, payload, socket) do
-    account = identifier_hash
-              |> Account.account_for_login_identifier_hash(can?(nil, create_account(nil)), nil)
-    credentials = account
-                  |> Account.credentials_for_account()
+    account =
+      identifier_hash |> Account.account_for_login_identifier_hash(can?(nil, create_account(nil)))
+
+    credentials = account |> Account.credentials_for_account()
     broadcast!(socket, "auth_credentials", %{credentials: credentials, payload: payload})
   end
 end

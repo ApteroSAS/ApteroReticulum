@@ -133,7 +133,8 @@ config :ret, Ret.MediaResolver,
   ytdl_host: System.get_env("YTDL_HOST"),
   photomnemonic_endpoint: System.get_env("PHOTOMNEMONIC_ENDPOINT")
 
-config :ret, Ret.Speelycaptor, speelycaptor_endpoint: System.get_env("SPEELYCAPTOR_ENDPOINT")
+config :ret, Ret.Speelycaptor,
+  speelycaptor_endpoint: "https://1dhaogh2hd.execute-api.us-west-1.amazonaws.com/public"
 
 config :ret, Ret.Storage,
   host: "https://#{host}",
@@ -167,7 +168,8 @@ config :ret, Ret.Mailer,
 
 config :ret, RetWeb.Email, from: System.get_env("SMTP_USERNAME")
 
-config :ret, Ret.PermsToken, perms_key: (System.get_env("PERMS_KEY") || "") |> String.replace("\\n", "\n")
+config :ret, Ret.PermsToken,
+  perms_key: (System.get_env("PERMS_KEY") || "") |> String.replace("\\n", "\n")
 
 config :ret, Ret.OAuthToken, oauth_token_key: ""
 
@@ -179,7 +181,8 @@ config :ret, Ret.Guardian,
 
 config :web_push_encryption, :vapid_details,
   subject: "mailto:admin@aptero.co",
-  public_key: "BAb03820kHYuqIvtP6QuCKZRshvv_zp5eDtqkuwCUAxASBZMQbFZXzv8kjYOuLGF16A3k8qYnIN10_4asB-Aw7w",
+  public_key:
+    "BAb03820kHYuqIvtP6QuCKZRshvv_zp5eDtqkuwCUAxASBZMQbFZXzv8kjYOuLGF16A3k8qYnIN10_4asB-Aw7w",
   # This config value is for local development only.
   private_key: "w76tXh1d3RBdVQ5eINevXRwW6Ow6uRcBa8tBDOXfmxM"
 

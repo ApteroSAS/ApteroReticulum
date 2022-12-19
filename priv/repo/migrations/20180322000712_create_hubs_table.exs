@@ -12,6 +12,6 @@ defmodule Ret.Repo.Migrations.CreateHubsTable do
       timestamps()
     end
 
-    create index(:hubs, [:hub_sid], unique: true)
+    create unique_index(:hubs, [:hub_sid])
   end
 end
