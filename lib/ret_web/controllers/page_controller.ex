@@ -428,7 +428,15 @@ defmodule RetWeb.PageController do
   end
 
   def render_hub_content(conn, nil, _) do
-    conn |> send_resp(404, "Invalid URL.")
+    user_agent =
+      get_req_header(conn, "user-agent")
+      |> Enum.at(0)
+
+    if String.contains?(user_agent, "kube-probe") do
+      send_resp(conn, 200, "")
+    else
+      send_resp(conn, 404, "bad Room ID")
+    end
   end
 
   def render_hub_content(conn, hub, "objects.gltf") do
@@ -680,16 +688,20 @@ defmodule RetWeb.PageController do
         [:scheme, :port, :host] |> Enum.map(&Keyword.get(cors_proxy_url, &1))
 
       is_cors_proxy_url =
-        cors_scheme == Atom.to_string(conn.scheme) && cors_host == conn.host &&
-          cors_port == conn.port
+        if System.get_env("TURKEY_MODE") do
+          cors_host == conn.host &&
+            cors_scheme == get_req_header(conn, "x-forwarded-proto") |> Enum.at(0)
+        else
+          cors_scheme == Atom.to_string(conn.scheme) && cors_host == conn.host &&
+            cors_port == conn.port
+        end
 
       if is_cors_proxy_url do
         allowed_origins =
           Application.get_env(:ret, RetWeb.Endpoint)[:allowed_origins] |> String.split(",")
-
         opts =
           ReverseProxyPlug.init(
-            upstream: ip_url,
+            upstream: url,
             allowed_origins: allowed_origins,
             proxy_url: "#{cors_scheme}://#{cors_host}:#{cors_port}",
             # Since we replaced the host with the IP address in ip_url above, we need to force the host
@@ -697,16 +709,15 @@ defmodule RetWeb.PageController do
             # Note that we have to convert the authority to a charlist, since this uses Erlang's `ssl` module
             # internally, which expects a charlist.
             client_options: [
-              ssl: [{:server_name_indication, to_charlist(authority)}, {:versions, [:"tlsv1.2"]}]
+              ssl: [{:server_name_indication, to_charlist(authority)}, {:versions, [:"tlsv1.2",:"tlsv1.3"]}]
             ],
-            preserve_host_header: true
+            # preserve_host_header: true
           )
 
         body = ReverseProxyPlug.read_body(conn)
         is_head = conn |> Conn.get_req_header("x-original-method") == ["HEAD"]
 
-        %Conn{}
-        |> Map.merge(conn)
+        %Conn{}|> Map.merge(conn)
         |> Map.put(
           :method,
           if is_head do
@@ -717,11 +728,6 @@ defmodule RetWeb.PageController do
         )
         # Need to strip path_info since proxy plug reads it
         |> Map.put(:path_info, [])
-        # Since we replaced the host with the IP address in ip_url above, we need to force the host
-        # header back to the original authority so that the proxy destination does not reject our request
-        |> Conn.put_req_header("host", authority)
-        # Some domains disallow access from improper Origins
-        |> Conn.delete_req_header("origin")
         |> ReverseProxyPlug.request(body, opts)
         |> ReverseProxyPlug.response(conn, opts)
       else

@@ -8,11 +8,11 @@ end
 
 defmodule Ret.Hub do
   use Ecto.Schema
-  use Bitwise
 
+  import Bitwise
+  import Canada, only: [can?: 2]
   import Ecto.Changeset
   import Ecto.Query
-  import Canada, only: [can?: 2]
 
   alias Ret.{
     Account,
@@ -655,7 +655,15 @@ defmodule Ret.Hub do
       host = RoomAssigner.get_available_host(hub.host)
 
       if host && host != hub.host do
-        hub |> changeset_for_new_host(host) |> Repo.update!()
+        updated_hub = hub |> changeset_for_new_host(host) |> Repo.update!()
+
+        RetWeb.Endpoint.broadcast("hub:" <> hub.hub_sid, "host_changed", %{
+          host: host,
+          port: Hub.janus_port(),
+          turn: Hub.generate_turn_info()
+        })
+
+        updated_hub
       else
         hub
       end

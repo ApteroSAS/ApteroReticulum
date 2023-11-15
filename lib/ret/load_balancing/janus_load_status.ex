@@ -10,15 +10,14 @@ defmodule Ret.JanusLoadStatus do
       if module_config(:janus_service_name) == "" do
         {:ok, [{:host_to_ccu, [{module_config(:default_janus_host), 0}]}]}
       else
-        with pods when pods != [] <- get_dialog_pods() do
+        pods = get_dialog_pods()
+
+        if length(pods) > 0 do
           {:ok, [{:host_to_ccu, pods}]}
         else
-          _ ->
-            Logger.warn(
-              "falling back to default_janus_host because get_dialog_pods() returned []"
-            )
-
-            {:ok, [{:host_to_ccu, [{module_config(:default_janus_host), 0}]}]}
+          # get_dialog_pods/0 can fail to find hosts for reasons we don't fully understand
+          # If this happens, don't update the cache.
+          :ignore
         end
       end
     else
@@ -65,7 +64,10 @@ defmodule Ret.JanusLoadStatus do
       exception ->
         # This should only really occur in disaster scenarios,
         # if the request to the dialog endpoint fails, or it returns an invalid response.
-        Logger.warn(inspect(exception))
+        exception
+        |> inspect()
+        |> Logger.warning()
+
         []
     end
   end

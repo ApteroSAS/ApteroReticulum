@@ -233,6 +233,10 @@ defmodule Ret.Storage do
     end
   end
 
+  def promote(_id, nil, nil, _account) do
+    {:error, :not_allowed}
+  end
+
   def promote(nil, _key, _promotion_token, _account) do
     {:error, :not_found}
   end
@@ -319,8 +323,8 @@ defmodule Ret.Storage do
         |> Repo.insert!()
 
       File.mkdir_p!(dest_path)
-      File.rename(meta_file_path, dest_meta_file_path)
-      File.rename(blob_file_path, dest_blob_file_path)
+      File.rename!(meta_file_path, dest_meta_file_path)
+      File.rename!(blob_file_path, dest_blob_file_path)
 
       {:ok, owned_file}
     else
@@ -329,7 +333,7 @@ defmodule Ret.Storage do
     end
   end
 
-  # If an owned file does not have a promotion token associated with it, it can be promoted with any given 
+  # If an owned file does not have a promotion token associated with it, it can be promoted with any given
   # promotion token, including nil.
   defp check_promotion_token(nil, _token), do: {:ok}
   defp check_promotion_token(actual_token, token) when actual_token == token, do: {:ok}
@@ -483,8 +487,8 @@ defmodule Ret.Storage do
         paths_for_uuid(uuid, expiring_file_path())
     ) do
       File.mkdir_p!(dest_path)
-      File.rename(meta_file_path, dest_meta_file_path)
-      File.rename(blob_file_path, dest_blob_file_path)
+      File.rename!(meta_file_path, dest_meta_file_path)
+      File.rename!(blob_file_path, dest_blob_file_path)
     end
   end
 
@@ -502,13 +506,11 @@ defmodule Ret.Storage do
     ext = MIME.extensions(content_type) |> List.first()
     filename = [id, ext] |> Enum.reject(&is_nil/1) |> Enum.join(".")
 
-    "#{file_host}/files/#{filename}#{
-      if token do
-        "?" <> URI.encode_query(token: token)
-      else
-        ""
-      end
-    }"
+    "#{file_host}/files/#{filename}#{if token do
+      "?" <> URI.encode_query(token: token)
+    else
+      ""
+    end}"
     |> URI.parse()
   end
 
@@ -540,9 +542,7 @@ defmodule Ret.Storage do
 
   defp paths_for_uuid(uuid, subpath) do
     path =
-      "#{module_config(:storage_path)}/#{subpath}/#{String.slice(uuid, 0, 2)}/#{
-        String.slice(uuid, 2, 2)
-      }"
+      "#{module_config(:storage_path)}/#{subpath}/#{String.slice(uuid, 0, 2)}/#{String.slice(uuid, 2, 2)}"
 
     blob_file_path = "#{path}/#{uuid}.blob"
     meta_file_path = "#{path}/#{uuid}.meta.json"
