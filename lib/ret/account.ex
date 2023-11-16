@@ -90,8 +90,10 @@ defmodule Ret.Account do
     end
   end
 
-  def account_for_login_identifier_hash(identifier_hash, create_if_not_exists \\ false, mail) do
-    #"email 1 " <> mail |> IO.inspect
+  def account_for_login_identifier_hash(identifier_hash, create_if_not_exists \\ false, mail \\ nil) do
+    #IO.inspect("account_for_login_identifier_hash")
+    #IO.inspect(mail)
+    #IO.inspect(identifier_hash)
     login = Repo.one(from l in Login, where: l.identifier_hash == ^identifier_hash)
 
       try do

@@ -15,7 +15,6 @@ RUN apk update && apk add --no-cache inotify-tools
 RUN mkdir -p /storage && chmod 777 /storage
 WORKDIR ret
 COPY --from=certr /certs .
-COPY ./.elixir_ls ./.elixir_ls
 COPY ./assets ./assets
 COPY ./bin ./bin
 COPY ./config ./config

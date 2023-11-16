@@ -154,6 +154,9 @@ defmodule RetWeb.AuthChannel do
       identifier_hash |> Account.account_for_login_identifier_hash(can?(nil, create_account(nil)))
 
     credentials = account |> Account.credentials_for_account()
+    #IO.inspect("broadcast_credentials_and_payload")
+    #IO.inspect(credentials)
+    #IO.inspect(account)
     broadcast!(socket, "auth_credentials", %{credentials: credentials, payload: payload})
   end
 end

@@ -1038,13 +1038,15 @@ defimpl Canada.Can, for: Ret.Account do
   def can?(%Ret.Account{is_admin: true}, :create_hub, _), do: true
 
   def can?(_account, :create_hub, _),
-    do: !AppConfig.get_cached_config_value("features|disable_room_creation")
+      #aptero
+      do: true
 
   # Create accounts
   def can?(%Ret.Account{is_admin: true}, :create_account, _), do: true
 
   def can?(_account, :create_account, _),
-    do: !AppConfig.get_cached_config_value("features|disable_sign_up")
+      #aptero
+      do: true
 
   # Deny permissions for any other case that falls through
   def can?(_, _, _), do: false
