@@ -1,1 +1,1 @@
-python py_docker.py publish
+npx dockflow publish

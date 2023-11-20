@@ -26,7 +26,7 @@ COPY ./.tool-versions ./.tool-versions
 COPY ./mix.exs ./mix.exs
 COPY ./mix.lock ./mix.lock
 COPY ./rel ./rel
-COPY ./version.json ./version.json
+COPY dockflow.json ./version.json
 COPY docker/config.toml .
 RUN mix local.hex --force
 RUN mix local.rebar --force
@@ -35,6 +35,10 @@ RUN mix deps.clean mime --build
 RUN rm -rf _build
 COPY ./lib ./lib
 #Compile is very long around 200s
+
+ENV MIX_ENV=prod
+ENV PROD=true
+
 RUN mix compile
 #RUN MIX_ENV=prod mix distillery.release
 #CMD exec /ret/bin/ret foreground

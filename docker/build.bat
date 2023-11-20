@@ -1,1 +1,1 @@
-python py_docker.py build
+npx dockflow build
